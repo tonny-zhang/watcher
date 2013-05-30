@@ -31,5 +31,5 @@
 `nohup node server.js > /var/log/server.log 2>&1 &`
 或
 `nohup node server.js './config/other.js' > /var/log/server.log 2>&1 &`
-3. 生产机运行同步
-`nohup shell/syncMulti.sh > /var/log/syncMulti.log 2>&1 &`
+3. 生产机运行同步(配置crontab)
+`*/1 * * * * /usr/bin/flock -xn /var/run/syncMultiLock.lock -c '/tonny/shell/syncMultiLock.sh > /var/log/syncMultiLock.log 2>&1'`
