@@ -10,9 +10,9 @@ var watcherUtil = require('./util');
 
 var now = +new Date();//程序第一次启动时，可操作指定时间前生成或修改的文件或目录
 exports.Watcher = (function(){
-    var configIndex = require('./config/index');
-	var config = configIndex.watcher;
-    var _logPath = configIndex.logPath;
+    var config = require('./config/watcher');
+    var createDelay = config.create_delay;
+    var _logPath = config.logPath;
 	var _log = watcherUtil.prefixLogSync(_logPath,'watcher');
     var _print = _log;//watcherUtil.print;
 	var _error = watcherUtil.errorSync(_logPath);
@@ -48,7 +48,7 @@ exports.Watcher = (function(){
                     var stat = fs.statSync(filePath);
                     if(stat.isDirectory()){
                         _this.addWatch(filePath);
-                    }else if(now - stat.mtime.getTime() < config.create_delay){//当小于指定时间的话，可视为新创建或修改的数据
+                    }else if(now - stat.mtime.getTime() < createDelay){//当小于指定时间的话，可视为新创建或修改的数据
                         _this._emit(Watcher.MODIFY,filePath,fileName,Watcher.TYPE_FILE);
                     }
                 });
@@ -76,7 +76,7 @@ exports.Watcher = (function(){
         };
         var watch = inotify.addWatch(dir);
         if(watch){
-            if(now - fs.statSync(_path).mtime.getTime() < config.create_delay){
+            if(now - fs.statSync(_path).mtime.getTime() < createDelay){
                 //这里回调创建目录事件，防止`mkdir -p ./a/b/c/d`这种递归创建
                 watcher._emit(Watcher.CREATE_DIR,_path,path.basename(_path),Watcher.TYPE_DIR);
             }

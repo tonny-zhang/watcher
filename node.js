@@ -5,7 +5,7 @@ var util = require('./util');
 var path = require('path');
 var url = require('url');
 var fs = require('fs');
-var config = require('./config/index');
+var config = require('./config/watcher');
 var _log = util.prefixLogSync(config.logPath,'watcher');
 var _error = util.errorSync(config.logPath);
 /*创建用于其它程序访问的http服务*/

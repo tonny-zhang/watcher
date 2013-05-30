@@ -3,26 +3,13 @@
 var fs = require('fs');
 var path = require('path');
 var util = require('./util');
-var watcherConfig = require('./config/index');
-var config = require('./config/server');
-var _log = util.prefixLogSync(config.logPath,config.prefixLogname);
-var _delete = function(content){
-	if(!content){
-		return;
-	}
-	content = content.toString();
-	var lines = content.split(watcherConfig.deletedSep);
-	lines.forEach(function(v){
-		if(v){
-			var rmdirName = path.join(config.serverPath,v);
-			util.rmdirSync(rmdirName);
-			_log('rmdir',rmdirName);
-		}
-	})
-}
 
-;(function(){
-	var deletedFilePath = path.join(config.serverPath,watcherConfig.deletedFileName);
+function deal(configPath){
+	var config = util.extend({},require('./config/index'),require('./config/server'));
+	if(configPath){
+		config = util.extend(config,require(configPath));
+	}
+	var deletedFilePath = path.join(config.serverPath,config.deletedFileName);
 	var delay = config.watchDelay;
 	var fn = function(){
 		if(fs.existsSync(deletedFilePath)){
@@ -33,4 +20,27 @@ var _delete = function(content){
 		setTimeout(fn,delay);
 	}
 	setTimeout(fn,delay);
+
+	var _log = util.prefixLogSync(config.logPath,config.prefixLogname);
+	var _delete = function(content){
+		if(!content){
+			return;
+		}
+		content = content.toString();
+		var lines = content.split(watcherConfig.deletedSep);
+		lines.forEach(function(v){
+			if(v){
+				var rmdirName = path.join(config.serverPath,v);
+				util.rmdirSync(rmdirName);
+				_log('rmdir',rmdirName);
+			}
+		})
+	}
+}
+(function(){
+	var args = process.argv;
+	if(args.length >= 2){
+		var configPath = args[2] && (args[2].replace(/^\s+|\s+$/,''));
+		deal(configPath);
+	}
 })();

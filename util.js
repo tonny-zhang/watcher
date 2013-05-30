@@ -108,10 +108,10 @@ function md5(str){
 			})
 		}
 		//同步输出到错误日志文件
-		exports.errorSync = function(logPath){
+		exports.errorSync = function(logPath,prefix){
 			//这里可以保证不和logSync的缓存键值相同
 			return exports.logSync(logPath,function(msgDate){
-				return path.join(logPath,'err_'+msgDate.format('yyyy-MM-dd')+'.log');
+				return path.join(logPath,(prefix||'err_')+msgDate.format('yyyy-MM-dd')+'.log');
 			});
 		}
 		exports.prefixLogSync = function(logPath,prefix){
