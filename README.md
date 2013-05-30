@@ -33,3 +33,13 @@
 `nohup node server.js './config/other.js' > /var/log/server.log 2>&1 &`
 3. 生产机运行同步(配置crontab)
 `*/1 * * * * /usr/bin/flock -xn /var/run/syncMultiLock.lock -c '/tonny/shell/syncMultiLock.sh > /var/log/syncMultiLock.log 2>&1'`
+
+#其它
+addPathAPI.js给外部提供临时的更新文件目录的接口，用法如下：
+`node addPathAPI.js -f '/temp/data.txt' '/temp/data.txt1'` 或 `node addPathAPI.js -p "/a/b" "/a/1.txt|true"`
+###关于文件里内容或-p后跟的参数格式，如下：
+`a/b`表示目录
+
+`a/b|true`表示文件
+
+文件内容格式，如：`a/b,a/b/1|true`
