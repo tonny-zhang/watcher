@@ -6,7 +6,7 @@
 3. rsync
 
 # 配置
-## 监控
+### 监控
 1. watcheMemory.js(这个运行在生产机)
 这个是监控主程序，默认加载配置文件`./config/index.js`，
 也可以命令行指定配置文件，覆盖默认配置，如：`node watcherMemory.js './config/other.js'`
@@ -17,7 +17,7 @@
 主要监控并处理生产机上的删除操作，默认加载`./config/server.js`
 也可以命令行指定配置文件，覆盖默认配置，如：`node server.js './config/other.js'`
 
-## 同步
+### 同步
 1. shell/syncMultiLock.sh为同步主程序，脚本里有配置，根据需要可修改
 `sh_2013-05-30.log`为每次心跳测试日志，可做为脚本运行记录
 `rsync_2013-05-30_*.log`为syncMultiLock.sh向目标机同步的日志
