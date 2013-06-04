@@ -27,7 +27,7 @@ function deal(configPath){
 			return;
 		}
 		content = content.toString();
-		var lines = content.split(watcherConfig.deletedSep);
+		var lines = content.split(config.deletedSep);
 		lines.forEach(function(v){
 			if(v){
 				var rmdirName = path.join(config.serverPath,v);

@@ -15,9 +15,9 @@ var Node = require('./node');
 		(function(){
 			var config = require('./config/index');
 			if(configPath){
-				config = util.extend(config,require(configPath));
+				config = watcherUtil.extend(config,require(configPath));
 			}
-			watcherUtil.mkdirSync(path.dirname(config.copyToPath));
+			watcherUtil.mkdirSync(path.normalize(config.copyToPath));
 			
 			var tree = new Node(config.watchPath,config.port);
 			new Watcher()
