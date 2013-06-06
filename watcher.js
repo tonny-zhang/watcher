@@ -1,7 +1,6 @@
 /*监控主类，并为外部提供接口*/
 
 var Inotify = require('inotify').Inotify,
-    ndir    = require('ndir'),
     fs = require('fs'),
     path   = require('path')
     util = require("util"),
@@ -31,14 +30,35 @@ exports.Watcher = (function(){
     	if(!this instanceof Watcher){
     		return new Watcher();
     	}
-        this.options = watcherUtil.extend({},defaultOptions,options);
-        this.ignorePath = options && options.ignorePath && (util.isRegExp(options.ignorePath)?options.ignorePath:new RegExp(options.ignorePath.replace('.','\\\.').replace('*','.*')));
+        this.options = options = watcherUtil.extend({},defaultOptions,options);
+        this.ignorePath = options.ignorePath && (util.isRegExp(options.ignorePath)?options.ignorePath:new RegExp(options.ignorePath.replace('.','\\\.').replace('*','.*')));
     }
     util.inherits(Watcher,EventEmitter);
     
+    Watcher.prototype.filterSubPath = function(basePath,subPath){
+        var _formatPath = function(_p){
+            return path.normalize(_p).replace(/\\/g,'/');
+        }
+        !watcherUtil.isArray(subPath) && (subPath = [subPath]);
+        if(subPath.length > 0){
+            basePath = path.normalize(basePath);
+            subPath = subPath.map(function(v){
+                return path.join(basePath,v);
+            });
+            this.subPath = subPath.join('||');// new RegExp('^'+basePath+'(/('+subPath.join('|')+'))?$');
+        }
+    }
     /*给指定目录添加监控，会自动递归监控子目录*/
     Watcher.prototype.addWatch = function(watchPath){
     	var _this = this;
+        watchPath = path.normalize(watchPath);
+        //不是根目录或指定子目录过滤掉
+        // if(_this.subPath && !_this.subPath.test(watchPath)){
+        //     return;
+        // }
+        if(!~_this.subPath.indexOf(watchPath)){
+            return;
+        }
         _inotifyAddWatch(_this,watchPath);
         if(_this.options.isRecursive){
             try{
@@ -94,9 +114,9 @@ exports.Watcher = (function(){
     		return;
     	}
     	var mask = event.mask;
-        var fileName = event.name;
+        var fileName = event.name || '';
         var watch = event.watch;
-        var fullname = watchPathList[watch] + '/' + fileName;
+        var fullname = path.join(watchPathList[watch], fileName);
         
         var type;
         /*新建文件时，先触发创建再触发修改*/
@@ -110,6 +130,7 @@ exports.Watcher = (function(){
             if (mask & Inotify.IN_ISDIR){
                 if(watcher.options.isRecursive){
                     watcher.addWatch(fullname);//文件夹创建放到addWatch里
+                    
                     type = Watcher.CREATE_DIR;
                 }
             }else{

@@ -8,7 +8,7 @@ var fs = require('fs');
 
 var copyToPath = path.normalize(config.copyToPath);
 var copyToPathExp = new RegExp('^'+copyToPath.replace(/\\/g,'\\\\'));
-var watchPath = path.normalize(config.watchPath);
+var watchPath = path.normalize(config.watchPath.base);
 function _dealData(data){
 	if(!data){
 		return;

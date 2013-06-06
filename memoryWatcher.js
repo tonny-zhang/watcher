@@ -19,8 +19,9 @@ var Node = require('./node');
 			}
 			watcherUtil.mkdirSync(path.normalize(config.copyToPath));
 			
-			var tree = new Node(config.watchPath,config.port);
-			new Watcher()
+			var watcherBasePath = path.normalize(config.watchPath.base);
+			var tree = new Node(watcherBasePath,config.port);
+			var watcher = new Watcher({ignorePath:/^\..+/})
 			.on(Watcher.CREATE_FILE,function(d){
 				tree.addPath(d.fullname,true);
 			})
@@ -32,9 +33,13 @@ var Node = require('./node');
 			})
 			.on(Watcher.DELETE,function(d){
 				tree.deletePath(d.fullname);
-			})
+			});
 			/*要同步初始化的文件夹及文件，保证之前已经注册成功事件*/
-			.addWatch(config.watchPath,{ignorePath:/^\..+/});
+			var watchSubPath = config.watchPath.sub;
+			if(watchSubPath && watchSubPath.length > 0){
+				watcher.filterSubPath(watcherBasePath,watchSubPath);
+			}
+			watcher.addWatch(watcherBasePath);
 		})();
 	}
 })();

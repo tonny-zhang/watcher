@@ -22,7 +22,7 @@ function run() {
 	rsyncLog=${LOG_PATH}rsync_${toDay}
 	shellLog=${LOG_PATH}sh_${toDay}.log
     curl -o $TEMP_DATA_PATH $URL 2>${LOG_PATH}curl_${toDay}.log
-    node /tonny/nodejs/watcher/dealTreeMemory.js -f $TEMP_DATA_PATH >> ${dealLog}
+    /usr/local/bin/node /tonny/nodejs/watcher/dealTreeMemory.js -f $TEMP_DATA_PATH >> ${dealLog}
     rm -rf $TEMP_DATA_PATH
     num=`ls ${TEMP_PATH}|wc -l`
     if [ $num -gt 0 ]; then
@@ -53,7 +53,7 @@ totalSeconds=55
 usedSeconds=0
 
 echo '======== crontab start ========' >> ${LOG_PATH}sh_$(date +%Y-%m-%d).log;
-
+/usr/bin/flock -xn /var/run/watcher.lock -c 'nohup /usr/local/bin/node /tonny/nodejs/memoryWatcher.js >> /tonny/log/watcher/memoryWatcher.log 2>&1 &'
 while [ $usedSeconds -le $totalSeconds ]
 do
     run

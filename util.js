@@ -184,3 +184,10 @@ exports.extend = function(a,b,c,d){
 	
 	return a;
 }
+;(function(){
+	['Array'].forEach(function(item){
+		exports['is'+item] = function(obj){
+			return Object.prototype.toString.call(obj) == '[object '+item+']';
+		}
+	});
+})();
