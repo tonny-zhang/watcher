@@ -52,7 +52,7 @@ var Node = function(basePath,port){
 		throw new Error('basePath is necessary!');
 	}
 	this.basePath = path.normalize(basePath+path.sep);
-	this._basePathExp = new RegExp('^'+this.basePath.replace(/\\/g,'\\\\'));
+	// this._basePathExp = new RegExp('^'+this.basePath.replace(/\\/g,'\\\\'));
 	this.tree = {}
 	this.deletedPaths = [];
 	if(port){
@@ -60,12 +60,12 @@ var Node = function(basePath,port){
 	}
 }
 
-Node.prototype._getRelativePath = function(p){
-	return path.normalize(p).replace(this._basePathExp,'');
-}
+// Node.prototype._getRelativePath = function(p){
+// 	return path.normalize(p).replace(this._basePathExp,'');
+// }
 /*添加路径，可为相对basePath的相对路径*/
 Node.prototype.addPath = function(p,isFile){
-	p = this._getRelativePath(p);
+	// p = this._getRelativePath(p);
 	var pathArr = p.split(path.sep);
 	var fileName = isFile && pathArr.pop();
 	var temp = pathArr.shift();
@@ -84,7 +84,7 @@ Node.prototype.addPath = function(p,isFile){
 /*删除路径*/
 Node.prototype.deletePath = function(p){
 	var _this = this;
-	p = this._getRelativePath(p);
+	// p = this._getRelativePath(p);
 	var pathArr = p.split(path.sep);
 	var temp = pathArr.shift();
 	var currentNode = this.tree;

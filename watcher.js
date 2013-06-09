@@ -35,28 +35,34 @@ exports.Watcher = (function(){
     }
     util.inherits(Watcher,EventEmitter);
     
-    Watcher.prototype.filterSubPath = function(basePath,subPath){
-        var _formatPath = function(_p){
-            return path.normalize(_p).replace(/\\/g,'/');
-        }
-        !watcherUtil.isArray(subPath) && (subPath = [subPath]);
-        if(subPath.length > 0){
-            basePath = path.normalize(basePath);
-            subPath = subPath.map(function(v){
-                return path.join(basePath,v);
-            });
-            this.subPath = subPath.join('||');// new RegExp('^'+basePath+'(/('+subPath.join('|')+'))?$');
-        }
-    }
+    // Watcher.prototype.filterSubPath = function(basePath,subPath){
+    //     var _formatPath = function(_p){
+    //         return path.normalize(_p).replace(/\\/g,'/');
+    //     }
+    //     !watcherUtil.isArray(subPath) && (subPath = [subPath]);
+    //     if(subPath.length > 0){
+    //         basePath = path.normalize(basePath);
+    //         subPath = subPath.map(function(v){
+    //             return path.join(basePath,v);
+    //         });
+    //         this.subPath = subPath.join('||');// new RegExp('^'+basePath+'(/('+subPath.join('|')+'))?$');
+    //     }
+    // }
+    var subPathCache = {};
     /*给指定目录添加监控，会自动递归监控子目录*/
-    Watcher.prototype.addWatch = function(watchPath){
+    Watcher.prototype.addWatch = function(watchPath,subPath){
     	var _this = this;
         watchPath = path.normalize(watchPath);
         //不是根目录或指定子目录过滤掉
         // if(_this.subPath && !_this.subPath.test(watchPath)){
         //     return;
         // }
-        if(!~_this.subPath.indexOf(watchPath)){
+        if(subPath){
+            subPath = subPath.join('||');
+            subPathCache[watchPath] = [subPathCache[watchPath]||'',subPath].join('||');
+        }
+        var subPathInfo = subPathCache[watchPath];
+        if(!subPathInfo || !~subPathInfo.indexOf(watchPath)){
             return;
         }
         _inotifyAddWatch(_this,watchPath);
@@ -142,11 +148,13 @@ exports.Watcher = (function(){
                 var _watch = watchPathList[fullname];
                 delete watchPathList[_watch];
                 delete watchPathList[fullname];
+                delete subPathCache[fullname];
             }
         }else if(mask & Inotify.IN_DELETE_SELF){
             var _path = watchPathList[watch];
             delete watchPathList[watch];
             delete watchPathList[_path];
+            delete subPathCache[_path];
         }
         if(type){
         	watcher._emit(type,fullname,fileName,mask & Inotify.IN_ISDIR?Watcher.TYPE_DIR:Watcher.TYPE_FILE);

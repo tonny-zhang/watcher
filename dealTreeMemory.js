@@ -8,33 +8,69 @@ var fs = require('fs');
 
 var copyToPath = path.normalize(config.copyToPath);
 var copyToPathExp = new RegExp('^'+copyToPath.replace(/\\/g,'\\\\'));
-var watchPath = path.normalize(config.watchPath.base);
-function _dealData(data){
-	if(!data){
-		return;
+// var watchPath = path.normalize(config.watchPath.base);
+var _log = util.prefixLogSync(config.logPath,'deal');
+function _dealData(data,callback){
+	if(data){
+		_dealTree(data.tree,copyToPath);
+		_dealDeleteTree(data.deleteTree);
 	}
-	util.log('dealTreeMemory');
-	_dealTree(data.tree,copyToPath);
-	_dealDeleteTree(data.deleteTree);
+	_log('dealTreeMemory');
+	callback();
 }
 /*处理目录结构*/
-function _dealTree(tree,basePath){
+function _dealTree(tree){
 	if(!tree){
 		return;
 	}
-	for(var i in tree){
-		var toPath = path.normalize(path.join(basePath,i));
-		if(tree[i]){
-			util.mkdirSync(toPath);
-			util.log('mkdir:',toPath);
-			_dealTree(tree[i],toPath);
-		}else{
-			var fromPath = toPath.replace(copyToPathExp,watchPath);
-			util.copyFileSync(fromPath,toPath);
-			util.log('copyFile',toPath);
+	function _deal(fromDir,toDir,treeNode){
+		for(var i in treeNode){
+			var toPath = path.normalize(path.join(toDir,i));
+			if(tree[i]){
+				util.mkdirSync(toPath);
+				_log('mkdir',toPath);
+				_dealTree(tree[i],toPath);
+			}else{
+				var fromPath = path.normalize(path.join(fromDir,i));
+				util.copyFileSync(fromPath,toPath);
+				_log('copyFile',toPath);
+			}
 		}
 	}
+	config.watcher.forEach(function(v){
+		var driInfo;
+		var _pathArr = v.path.split(path.sep);
+		for(var i = 0,j=_pathArr.length;i<j;i++){
+			var temp = tree[_pathArr[i]];
+			if(temp){
+				driInfo = temp;
+			}else{
+				break;
+			}
+		}
+		if(i == j-1){
+			_deal(v,path.join(copyToPath,v.tempName),driInfo);
+		}
+	});
+	
 }
+// function _dealTree(tree,basePath){
+// 	if(!tree){
+// 		return;
+// 	}
+// 	for(var i in tree){
+// 		var toPath = path.normalize(path.join(basePath,i));
+// 		if(tree[i]){
+// 			util.mkdirSync(toPath);
+// 			_log('mkdir',toPath);
+// 			_dealTree(tree[i],toPath);
+// 		}else{
+// 			var fromPath = toPath.replace(copyToPathExp,watchPath);
+// 			util.copyFileSync(fromPath,toPath);
+// 			_log('copyFile',toPath);
+// 		}
+// 	}
+// }
 //处理要删除的信息
 function _dealDeleteTree(deleteTree){
 	if(!deleteTree || !deleteTree.length){
@@ -44,14 +80,15 @@ function _dealDeleteTree(deleteTree){
 	util.mkdirSync(deleteTreePath);
 	var deleteDetailFileName = path.join(deleteTreePath,config.deletedFileName);
 	fs.appendFileSync(deleteDetailFileName,deleteTree.join(config.deletedSep)+config.deletedSep);
-	util.log('deletedDetail:'+deleteDetailFileName);
+	_log('deletedDetail',deleteDetailFileName);
 }
 // _dealData({"tree":{"a":{"b":{"2.txt":0},"1.txt":0}},"deleteTree":["aa/bb/c","aa/c/1.txt"]});
 
 /*通过http得到内存中目录结构及要删除的信息
   ！！但这个方法不能保证同步
 */
-function getDataFromMemory(){
+function getDataFromMemory(callback){
+	callback || (callback = function(){});
 	var req = http.get({
 		hostname: 'localhost',
 		port: config.port
@@ -61,17 +98,21 @@ function getDataFromMemory(){
 		res.on('data',function(d){
 			data += d.toString();
 		}).on('end',function(){
-			try{
-				if(data){
-					_dealData(JSON.parse(data));
+			if(data){
+				try{
+					_dealData(JSON.parse(data),callback);
+				}catch(e){
+					_log('error getDataFromMemory data wrong!'+e.message);
+					callback();
 				}
-			}catch(e){
-				util.log('error getDataFromMemory data wrong!'+e.message);
+			}else{
+				callback();
 			}
 		});
 	});
 	req.on('error', function(e) {
-	  util.log('problem with request: ' + e.message);
+		_log('problem with request: ' + e.message);
+		callback();
 	});
 }
 /*从json文件中得到目录结构及要删除的信息
@@ -83,32 +124,34 @@ function getDataFromJsonFile(filePath){
 			var tree = require(filePath);
 			_dealData(tree);
 		}catch(e){
-			util.log('getDataFromJsonFile error',e.message);
+			_log('getDataFromJsonFile error',e.message);
 		}
 	}
 }
 
-;(function(){
-	//node dealTreeMemory.js -f ./temp.json
-	var helpInfo = '用法：\n'
-				+'node '+__filename+' -f json_file\n'
-				+'node '+__filename+'\n'
-				+'Example:node '+__filename+' -f "/temp/data.json"\n'
-				+'        node '+__filename;
-	function help(){
-		console.log(helpInfo);
-	}
-	var args = process.argv;
-	if(args.length == 4){
-		var option = args[2];
-		if(option == '-f'){
-			getDataFromJsonFile(args[3]);
-		}else{
-			help();
-		}
-	}else if(args.length == 2){
-		getDataFromMemory();
-	}else{
-		help();
-	}
-})()
+// ;(function(){
+// 	//node dealTreeMemory.js -f ./temp.json
+// 	var helpInfo = '用法：\n'
+// 				+'node '+__filename+' -f json_file\n'
+// 				+'node '+__filename+'\n'
+// 				+'Example:node '+__filename+' -f "/temp/data.json"\n'
+// 				+'        node '+__filename;
+// 	function help(){
+// 		console.log(helpInfo);
+// 	}
+// 	var args = process.argv;
+// 	if(args.length == 4){
+// 		var option = args[2];
+// 		if(option == '-f'){
+// 			getDataFromJsonFile(args[3]);
+// 		}else{
+// 			help();
+// 		}
+// 	}else if(args.length == 2){
+// 		getDataFromMemory();
+// 	}else{
+// 		help();
+// 	}
+// })()
+
+exports.getDataFromMemory = getDataFromMemory;

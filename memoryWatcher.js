@@ -14,13 +14,10 @@ var Node = require('./node');
 		var configPath = args[2] && (args[2].replace(/^\s+|\s+$/,''));
 		(function(){
 			var config = require('./config/index');
-			if(configPath){
-				config = watcherUtil.extend(config,require(configPath));
-			}
 			watcherUtil.mkdirSync(path.normalize(config.copyToPath));
 			
 			var watcherBasePath = path.normalize(config.watchPath.base);
-			var tree = new Node(watcherBasePath,config.port);
+			var tree = new Node('/',config.port);
 			var watcher = new Watcher({ignorePath:/^\..+/})
 			.on(Watcher.CREATE_FILE,function(d){
 				tree.addPath(d.fullname,true);
@@ -34,12 +31,16 @@ var Node = require('./node');
 			.on(Watcher.DELETE,function(d){
 				tree.deletePath(d.fullname);
 			});
-			/*要同步初始化的文件夹及文件，保证之前已经注册成功事件*/
-			var watchSubPath = config.watchPath.sub;
-			if(watchSubPath && watchSubPath.length > 0){
-				watcher.filterSubPath(watcherBasePath,watchSubPath);
+			var watcherCache = config.watcher.cache;
+			for(var i in watcherCache){
+				watcher.addWatch(i,watcherCache[i]);
 			}
-			watcher.addWatch(watcherBasePath);
+			/*要同步初始化的文件夹及文件，保证之前已经注册成功事件*/
+			// var watchSubPath = config.watchPath.sub;
+			// if(watchSubPath && watchSubPath.length > 0){
+			// 	watcher.filterSubPath(watcherBasePath,watchSubPath);
+			// }
+			// watcher.addWatch(watcherBasePath);
 		})();
 	}
 })();
