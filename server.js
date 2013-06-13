@@ -22,15 +22,22 @@ function deal(configPath){
 	setTimeout(fn,delay);
 
 	var _log = util.prefixLogSync(config.logPath,config.prefixLogname);
+	var fillReg = new RegExp('^([^'+config.deletedSep+'])');
 	var _delete = function(content){
 		if(!content){
 			return;
 		}
-		content = content.toString();
+		content = path.normalize(content.toString());
+		content = content.replace(fillReg,config.deletedSep+'$1');
+		var deleteMap = config.deleteMap;
+		for(var i in deleteMap){
+			var reg = new RegExp('('+config.deletedSep+')'+path.normalize(i).replace(/\\/g,'\\\\'),'g');
+			content = content.replace(reg,'$1'+deleteMap[i]);
+		}
 		var lines = content.split(config.deletedSep);
 		lines.forEach(function(v){
 			if(v){
-				var rmdirName = path.join(config.serverPath,v);
+				var rmdirName = v;
 				util.rmdirSync(rmdirName);
 				_log('rmdir',rmdirName);
 			}

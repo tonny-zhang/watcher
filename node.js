@@ -5,7 +5,7 @@ var util = require('./util');
 var path = require('path');
 var url = require('url');
 var fs = require('fs');
-var config = require('./config/watcher');
+var config = require('./config');
 var _log = util.prefixLogSync(config.logPath,'watcher');
 var _error = util.errorSync(config.logPath);
 /*创建用于其它程序访问的http服务*/
@@ -39,7 +39,7 @@ var _createServer = function(port,node){
 		}else{//得到内存中的目录树信息
 			var tree = node.getTree();
 			var deleteTree = node.getDeleteTree();
-			resConent = JSON.stringify({tree:tree,deleteTree:deleteTree});
+			resConent = JSON.stringify({base:tree.basePath,tree:tree,deleteTree:deleteTree});
 		}
 		res.end(resConent);
 	}).on('listening',function(d){
@@ -52,7 +52,7 @@ var Node = function(basePath,port){
 		throw new Error('basePath is necessary!');
 	}
 	this.basePath = path.normalize(basePath+path.sep);
-	// this._basePathExp = new RegExp('^'+this.basePath.replace(/\\/g,'\\\\'));
+	this._basePathExp = new RegExp('^'+this.basePath.replace(/\\/g,'\\\\'));
 	this.tree = {}
 	this.deletedPaths = [];
 	if(port){
@@ -60,12 +60,12 @@ var Node = function(basePath,port){
 	}
 }
 
-// Node.prototype._getRelativePath = function(p){
-// 	return path.normalize(p).replace(this._basePathExp,'');
-// }
+Node.prototype._getRelativePath = function(p){
+	return path.normalize(p).replace(this._basePathExp,'');
+}
 /*添加路径，可为相对basePath的相对路径*/
 Node.prototype.addPath = function(p,isFile){
-	// p = this._getRelativePath(p);
+	p = this._getRelativePath(p);
 	var pathArr = p.split(path.sep);
 	var fileName = isFile && pathArr.pop();
 	var temp = pathArr.shift();
@@ -84,7 +84,7 @@ Node.prototype.addPath = function(p,isFile){
 /*删除路径*/
 Node.prototype.deletePath = function(p){
 	var _this = this;
-	// p = this._getRelativePath(p);
+	p = this._getRelativePath(p);
 	var pathArr = p.split(path.sep);
 	var temp = pathArr.shift();
 	var currentNode = this.tree;

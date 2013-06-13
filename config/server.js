@@ -1,7 +1,9 @@
 /*目标服务上的监控配置*/
 module.exports = {
-	serverPath: '/tonny/serverOne',
+	serverPath: 'D:\\test\\server',
 	watchDelay: 3,
-	logPath: '/tonny/log',
-	prefixLogname: 'delete'
+	prefixLogname: 'delete',
+	deleteMap: {
+		'd:\\tonny\\test/1': 'd:\\tonny\\serverOne\\1'
+	}
 }

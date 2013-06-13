@@ -16,7 +16,7 @@ var Node = require('./node');
 			var config = require('./config/index');
 			watcherUtil.mkdirSync(path.normalize(config.copyToPath));
 			
-			var watcherBasePath = path.normalize(config.watchPath.base);
+			// var watcherBasePath = path.normalize(config.watchPath.base);
 			var tree = new Node('/',config.port);
 			var watcher = new Watcher({ignorePath:/^\..+/})
 			.on(Watcher.CREATE_FILE,function(d){
@@ -31,7 +31,7 @@ var Node = require('./node');
 			.on(Watcher.DELETE,function(d){
 				tree.deletePath(d.fullname);
 			});
-			var watcherCache = config.watcher.cache;
+			var watcherCache = config.watcher.info;
 			for(var i in watcherCache){
 				watcher.addWatch(i,watcherCache[i]);
 			}

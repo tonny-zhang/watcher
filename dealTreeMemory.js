@@ -7,15 +7,17 @@ var util = require('./util');
 var fs = require('fs');
 
 var copyToPath = path.normalize(config.copyToPath);
-var copyToPathExp = new RegExp('^'+copyToPath.replace(/\\/g,'\\\\'));
+// var copyToPathExp = new RegExp('^'+copyToPath.replace(/\\/g,'\\\\'));
 // var watchPath = path.normalize(config.watchPath.base);
-var _log = util.prefixLogSync(config.logPath,'deal');
+var _log = util.prefixLogSync(config.logPath,config.dealLogPrefix);
 function _dealData(data,callback){
+	_log('deal start');
+	callback || (callback = function(){});
 	if(data){
-		_dealTree(data.tree,copyToPath);
+		_dealTree(data.tree);
 		_dealDeleteTree(data.deleteTree);
 	}
-	_log('dealTreeMemory');
+	_log('deal end');
 	callback();
 }
 /*处理目录结构*/
@@ -26,10 +28,13 @@ function _dealTree(tree){
 	function _deal(fromDir,toDir,treeNode){
 		for(var i in treeNode){
 			var toPath = path.normalize(path.join(toDir,i));
-			if(tree[i]){
+			var subTreeNode = treeNode[i];
+			if(subTreeNode){
 				util.mkdirSync(toPath);
 				_log('mkdir',toPath);
-				_dealTree(tree[i],toPath);
+				for(var j in subTreeNode){
+					_deal(path.join(fromDir,i),path.join(toDir,i),subTreeNode);
+				}
 			}else{
 				var fromPath = path.normalize(path.join(fromDir,i));
 				util.copyFileSync(fromPath,toPath);
@@ -38,39 +43,23 @@ function _dealTree(tree){
 		}
 	}
 	config.watcher.forEach(function(v){
-		var driInfo;
+		var driInfo = tree;
 		var _pathArr = v.path.split(path.sep);
-		for(var i = 0,j=_pathArr.length;i<j;i++){
-			var temp = tree[_pathArr[i]];
+		for(var i = 1,j=_pathArr.length;i<j;i++){
+			var temp = driInfo[_pathArr[i]];
 			if(temp){
 				driInfo = temp;
 			}else{
 				break;
 			}
 		}
-		if(i == j-1){
-			_deal(v,path.join(copyToPath,v.tempName),driInfo);
+		if(i == j){
+			_deal(v.path,path.join(copyToPath,v.tempName),driInfo);
 		}
 	});
 	
 }
-// function _dealTree(tree,basePath){
-// 	if(!tree){
-// 		return;
-// 	}
-// 	for(var i in tree){
-// 		var toPath = path.normalize(path.join(basePath,i));
-// 		if(tree[i]){
-// 			util.mkdirSync(toPath);
-// 			_log('mkdir',toPath);
-// 			_dealTree(tree[i],toPath);
-// 		}else{
-// 			var fromPath = toPath.replace(copyToPathExp,watchPath);
-// 			util.copyFileSync(fromPath,toPath);
-// 			_log('copyFile',toPath);
-// 		}
-// 	}
-// }
+
 //处理要删除的信息
 function _dealDeleteTree(deleteTree){
 	if(!deleteTree || !deleteTree.length){
@@ -79,10 +68,10 @@ function _dealDeleteTree(deleteTree){
 	var deleteTreePath = copyToPath;
 	util.mkdirSync(deleteTreePath);
 	var deleteDetailFileName = path.join(deleteTreePath,config.deletedFileName);
-	fs.appendFileSync(deleteDetailFileName,deleteTree.join(config.deletedSep)+config.deletedSep);
+	fs.appendFileSync(deleteDetailFileName,config.deletedSep+deleteTree.join(config.deletedSep));
 	_log('deletedDetail',deleteDetailFileName);
 }
-// _dealData({"tree":{"a":{"b":{"2.txt":0},"1.txt":0}},"deleteTree":["aa/bb/c","aa/c/1.txt"]});
+// _dealData({"base":"d:/","tree":{"test":{"html":{"1":0,"a":{"b":{}}}}},"deleteTree":["aa/bb/c","aa/c/1.txt"]});
 
 /*通过http得到内存中目录结构及要删除的信息
   ！！但这个方法不能保证同步

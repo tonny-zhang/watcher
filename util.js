@@ -110,12 +110,11 @@ exports.extend = function(a,b,c,d){
 	exports.command = function(command,callback){
 		callback || (callback = function(){});
 		var runCommand = exec(command,function(error, stdout, stderr){
-			if(error){
-				callback(error);
+			if(error || stderr){
+				callback(error||stderr);
+			}else{
+				callback(null,stdout);
 			}
-		});
-		runCommand.stdout.on('data', function (data) { 
-			callback(null,data);
 		});
 	}
 })();

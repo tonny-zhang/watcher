@@ -1,7 +1,19 @@
 /*监控主类，并为外部提供接口*/
 
-var Inotify = require('inotify').Inotify,
-    fs = require('fs'),
+var Inotify = (function(){
+    try{
+        return require('inotify').Inotify;
+    }catch(e){
+        var cacheNum = 0;
+        var obj = function(){}
+        obj.prototype.addWatch = function(){
+            return cacheNum++;
+        }
+        return obj;
+    }
+    
+})();
+var fs = require('fs'),
     path   = require('path')
     util = require("util"),
     EventEmitter = require("events").EventEmitter;
@@ -9,7 +21,7 @@ var watcherUtil = require('./util');
 
 var now = +new Date();//程序第一次启动时，可操作指定时间前生成或修改的文件或目录
 exports.Watcher = (function(){
-    var config = require('./config/watcher');
+    var config = require('./config');
     var createDelay = config.create_delay;
     var _logPath = config.logPath;
 	var _log = watcherUtil.prefixLogSync(_logPath,'watcher');
@@ -34,20 +46,7 @@ exports.Watcher = (function(){
         this.ignorePath = options.ignorePath && (util.isRegExp(options.ignorePath)?options.ignorePath:new RegExp(options.ignorePath.replace('.','\\\.').replace('*','.*')));
     }
     util.inherits(Watcher,EventEmitter);
-    
-    // Watcher.prototype.filterSubPath = function(basePath,subPath){
-    //     var _formatPath = function(_p){
-    //         return path.normalize(_p).replace(/\\/g,'/');
-    //     }
-    //     !watcherUtil.isArray(subPath) && (subPath = [subPath]);
-    //     if(subPath.length > 0){
-    //         basePath = path.normalize(basePath);
-    //         subPath = subPath.map(function(v){
-    //             return path.join(basePath,v);
-    //         });
-    //         this.subPath = subPath.join('||');// new RegExp('^'+basePath+'(/('+subPath.join('|')+'))?$');
-    //     }
-    // }
+
     var subPathCache = {};
     /*给指定目录添加监控，会自动递归监控子目录*/
     Watcher.prototype.addWatch = function(watchPath,subPath){
@@ -62,7 +61,7 @@ exports.Watcher = (function(){
             subPathCache[watchPath] = [subPathCache[watchPath]||'',subPath].join('||');
         }
         var subPathInfo = subPathCache[watchPath];
-        if(!subPathInfo || !~subPathInfo.indexOf(watchPath)){
+        if(subPathInfo && !~subPathInfo.indexOf(watchPath)){
             return;
         }
         _inotifyAddWatch(_this,watchPath);
@@ -122,8 +121,11 @@ exports.Watcher = (function(){
     	var mask = event.mask;
         var fileName = event.name || '';
         var watch = event.watch;
-        var fullname = path.join(watchPathList[watch], fileName);
-        
+        try{
+            var fullname = path.join(watchPathList[watch], fileName);
+        }catch(e){
+            _error('error',[watch,fileName,watchPathList[watch]].join('_'));
+        }
         var type;
         /*新建文件时，先触发创建再触发修改*/
         if(mask & Inotify.IN_MODIFY){
