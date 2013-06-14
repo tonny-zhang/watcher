@@ -23,6 +23,7 @@
 
 crontab里配置  `*/1 * * * * /usr/bin/flock -xn /var/run/watcherRun.lock -c 'node /tonny/nodejs/watcher/run.js > /tonny/log/crontab_run.log 2>&1'`
 
+
 ## 可能遇到问题
 ### 环境安装
   1. make: g++: Command not found  
