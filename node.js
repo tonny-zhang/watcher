@@ -5,7 +5,7 @@ var util = require('./util');
 var path = require('path');
 var url = require('url');
 var fs = require('fs');
-var config = require('./config');
+var config = require('./config/watcher');
 var _log = util.prefixLogSync(config.logPath,'watcher');
 var _error = util.errorSync(config.logPath);
 /*创建用于其它程序访问的http服务*/
@@ -39,7 +39,7 @@ var _createServer = function(port,node){
 		}else{//得到内存中的目录树信息
 			var tree = node.getTree();
 			var deleteTree = node.getDeleteTree();
-			resConent = JSON.stringify({base:tree.basePath,tree:tree,deleteTree:deleteTree});
+			resConent = JSON.stringify({tree:tree,deleteTree:deleteTree});
 		}
 		res.end(resConent);
 	}).on('listening',function(d){
@@ -89,7 +89,7 @@ Node.prototype.deletePath = function(p){
 	var temp = pathArr.shift();
 	var currentNode = this.tree;
 	var str = '';
-	while(temp && (currentNode || currentNode == 0)){
+	while(temp && currentNode){
 		str += '["'+temp+'"]';
 		currentNode = currentNode[temp];
 		temp = pathArr.shift();
