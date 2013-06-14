@@ -22,11 +22,11 @@
   5. rsync采用ssh认证码机制，一定要确保运行程序用户ssh已经认证
 
 ## 可能遇到问题
-  ### 环境安装
+### 环境安装
     1. make: g++: Command not found
   		解决方案：apt-get install g++
 
-  ### 部署
+### 部署
     1. 无法创建监控
     	/proc/sys/fs/inotify/max_queued_events
     	/proc/sys/fs/inotify/max_user_watches 默认设置值太小
