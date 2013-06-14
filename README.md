@@ -28,12 +28,12 @@
 
 ### 部署
   1. 无法创建监控
-     /proc/sys/fs/inotify/max_queued_events
-     /proc/sys/fs/inotify/max_user_watches 默认设置值太小
+     /proc/sys/fs/inotify/max_queued_events  
+     /proc/sys/fs/inotify/max_user_watches 默认设置值太小  
      解决方案：用root用法配置crontab `*/1 * * * * /home/sam/nodejs/watcher/shell/confInotify.sh`
 
   2. run.js一直处于运行状态
-     localhost不是所有电脑都有配置，可以用wget或curl模拟抓包看到效果，一直在重复连接
+     localhost不是所有电脑都有配置，可以用wget或curl模拟抓包看到效果，一直在重复连接  
      解决方案：配置config.host为'127.0.0.1'
 
 ## 其它
