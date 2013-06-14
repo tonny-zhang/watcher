@@ -3,9 +3,7 @@
 var path = require('path');
 var fs = require('fs');
 var crypto = require('crypto');
-// process.on('uncaughtException',function(e){
-// 	exports.log('uncaughtException',JSON.stringify(e));
-// });
+/*时间格式化*/
 Date.prototype.format = function(format){
 	format || (format = 'yyyy-MM-dd hh:mm:ss');
 	var o = {
@@ -28,6 +26,7 @@ Date.prototype.format = function(format){
 	
 	return format;
 }
+/*字符中加密*/
 function md5(str){
     if(str && str.toString){
         return crypto.createHash('sha1').update(str.toString()).digest('hex');
@@ -36,6 +35,7 @@ function md5(str){
 }
 exports.md5 = md5;
 
+/*同步拷贝文件*/
 exports.copyFileSync = function(fromPath,toPath){
 	if(fs.existsSync(toPath)){
 		fs.unlinkSync(toPath);
@@ -57,6 +57,7 @@ exports.copyFileSync = function(fromPath,toPath){
 	fs.closeSync(fdr);
 	fs.closeSync(fdw);
 }
+/*同步递归创建目录*/
 exports.mkdirSync = function(mkPath){
 	var parentPath = path.dirname(mkPath);
 	if(!fs.existsSync(parentPath)){
@@ -66,7 +67,7 @@ exports.mkdirSync = function(mkPath){
 		fs.mkdirSync(mkPath);
 	}
 }
-
+/*同步递归删除目录*/
 exports.rmdirSync = function(p) {
     //如果文件路径不存在或文件路径不是文件夹则直接返回
     if(fs.existsSync(p)){
@@ -87,6 +88,7 @@ exports.rmdirSync = function(p) {
     	}
     }
 }
+/*继承*/
 exports.extend = function(a,b,c,d){
 	var args = [].slice.call(arguments,1);
 	args.forEach(function(obj){
@@ -97,6 +99,7 @@ exports.extend = function(a,b,c,d){
 	
 	return a;
 }
+/*isArray*/
 ;(function(){
 	['Array'].forEach(function(item){
 		exports['is'+item] = function(obj){
@@ -104,23 +107,8 @@ exports.extend = function(a,b,c,d){
 		}
 	});
 })();
-//直接运行外部命令
-;(function(){
-	var exec = require('child_process').exec;
-	exports.command = function(command,callback){
-		callback || (callback = function(){});
-		var runCommand = exec(command,function(error, stdout, stderr){
-			if(error || stderr){
-				callback(error||stderr);
-			}else{
-				callback(null,stdout);
-			}
-		});
-	}
-})();
 
-
-var config = require('./config/index');
+/*日志处理*/
 ;(function(){
 	//日志格式：
 	//"2013-05-21 09:30:21"	"add to memory" "/path/a/b.txt" 
@@ -140,25 +128,25 @@ var config = require('./config/index');
 			}
 		}
 	}
-	exports.print = config.isDebug ? print() : function(){};
+	exports.print = print();
 	exports.log = print('\t');
 	;(function(){
 		var delay = 10;
 		var logData = {};
 		var fnCache = {};
+		var _cacheTime = new Date();
 		/*同步输出*/
 		exports.logSync = function(logPath,getLogFileName){
+			getLogFileName || (getLogFileName = function(msgDate){
+				return path.join(logPath,msgDate.format('yyyy-MM-dd')+'.log');
+			});
 			logPath = path.normalize(path.join(logPath,'.'));
-			var cacheName = logPath+md5(getLogFileName);//根据logPath和getLogFileName来确定缓存名称
-		
+			var cacheName = getLogFileName(_cacheTime);//根据logPath和getLogFileName来确定缓存名称
 			if(fnCache[cacheName]){
 				return fnCache[cacheName];
 			}
 			exports.mkdirSync(logPath);
 			logData[cacheName] || (logData[cacheName] = []);
-			getLogFileName || (getLogFileName = function(msgDate){
-				return path.join(logPath,msgDate.format('yyyy-MM-dd')+'.log');
-			});
 			var deal = function(){
 				var tempData = logData[cacheName];
 				logData[cacheName] = [];
@@ -187,7 +175,7 @@ var config = require('./config/index');
 				var args = addTime(arguments);
 				var obj = [new Date(),args.join('\t')];
 				logData[cacheName].push(obj);
-				config.isDebug && exports.print.apply(null,arguments);
+				// config.isDebug && exports.print.apply(null,arguments);
 				if(!dealTime){//当没有处理队列时，启动处理
 					startDeal();
 				}
@@ -208,3 +196,25 @@ var config = require('./config/index');
 		}
 	})()
 })();
+/*直接运行外部命令*/
+;(function(){
+	var exec = require('child_process').exec;
+	exports.command = function(command,callback){
+		callback || (callback = function(){});
+		var runCommand = exec(command,function(error, stdout, stderr){
+			if(error || stderr){
+				callback(error||stderr);
+			}else{
+				callback(null,stdout);
+			}
+		});
+	}
+})();
+	
+exports.sysError = function(logPath){
+	var errorLog = exports.prefixLogSync(logPath,'err');
+	process.on('uncaughtException',function(e){
+		console.log(typeof e,Object.prototype.toString.call(e),e);
+		errorLog('sysErr',e);
+	});
+}

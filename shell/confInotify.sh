@@ -13,6 +13,6 @@ if [ `cat /proc/sys/fs/inotify/max_queued_events` -lt $MAX_NUM ];then
 fi
 
 if [ $IS_KILL_WATCHER ];then
-	kill -9 `ps aux|grep watcher/memoryWatcher.js|grep /usr/bin/node|awk '{print $2}'`
+	./stopWatcher.sh
 	echo 'kill watcher,config inotify' >> /tonny/log/conf_inotify_$(date +%Y-%m-%d).log
 fi

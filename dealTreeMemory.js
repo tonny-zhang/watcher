@@ -7,17 +7,14 @@ var util = require('./util');
 var fs = require('fs');
 
 var copyToPath = path.normalize(config.copyToPath);
-// var copyToPathExp = new RegExp('^'+copyToPath.replace(/\\/g,'\\\\'));
-// var watchPath = path.normalize(config.watchPath.base);
+
 var _log = util.prefixLogSync(config.logPath,config.dealLogPrefix);
 function _dealData(data,callback){
-	_log('deal start');
 	callback || (callback = function(){});
 	if(data){
 		_dealTree(data.tree);
 		_dealDeleteTree(data.deleteTree);
 	}
-	_log('deal end');
 	callback();
 }
 /*处理目录结构*/
@@ -79,7 +76,7 @@ function _dealDeleteTree(deleteTree){
 function getDataFromMemory(callback){
 	callback || (callback = function(){});
 	var req = http.get({
-		hostname: 'localhost',
+		hostname: config.host,
 		port: config.port
 	},function(res){
 		res.setEncoding('utf8');

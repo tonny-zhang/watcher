@@ -16,9 +16,13 @@ function index(config){
 		}
 		_watcherConfig[i] = conf;
 	});
-	config.deleteRsync.forEach(function(v,i){
-		config.deleteRsync[i]['port'] = v['port'] || defaultRsyncPort; //配置端口号，默认为2222
-	});
+	if(util.isArray(config.deleteRsync)){
+		config.deleteRsync.forEach(function(v,i){
+			config.deleteRsync[i]['port'] = v['port'] || defaultRsyncPort; //配置端口号，默认为2222
+			config.deleteRsync[i]['logPrefix'] = v['logPrefix'] || 'sync_dele_'+i;
+		});
+	}
+	
 	//合并重复的配置
 	(function() {
 		var tempArr = {};

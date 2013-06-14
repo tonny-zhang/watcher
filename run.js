@@ -9,6 +9,7 @@ var logPath = config.logPath;
 var currentDir = __dirname;
 (function(){
 	util.mkdirSync(logPath);//创建日志文件夹目录
+	util.sysError(logPath);
 })();
 
 //运行监控
@@ -25,24 +26,32 @@ var currentDir = __dirname;
 	var dealTreeMemory = require('./dealTreeMemory');
 	var totalRunTime = 55000;//程序运行总时间
 	var usedTime = 0;
-	var delay = 10000;
-	var _log = util.prefixLogSync(logPath,config.runLogPrefix);
+	var delay = 5000;
+	var _logRun = util.prefixLogSync(logPath,config.runLogPrefix);
+	var _logDeal = util.prefixLogSync(logPath,config.dealLogPrefix);
 	var _rsyncErrLog = util.prefixLogSync(logPath,config.rsyncErrLogPrefix);
 	var watcherInfo = config.watcher;
 	var rsyncCommand = [config.rsync.bin,config.rsync.param].join(' ');
 	var rsyncArr = [];
 	var copyToPath = path.normalize(config.copyToPath);
+	
+	var dealCommand = function(rsyncPath,rsyncInfo){
+		if(rsyncPath && util.isArray(rsyncInfo) && rsyncInfo.length > 0){
+			var temp = [];
+			rsyncInfo.forEach(function(v){
+				var command = [rsyncCommand,"'-e ssh -p "+v.port+"'",rsyncPath,v.address,'2>&1','>>',path.join(logPath,v.logPrefix+'_$(date +%Y-%m-%d).log')].join(' ');
+				// temp.push('if [ `ls '+rsyncPath+' 2>/dev/null|wc -l` -gt 0 ]; then '+command+';fi');
+				temp.push(command);
+			});
+			rsyncArr.push({'path':rsyncPath,'rsync': temp});
+		}
+	}
+	//处理同步命令处理
 	watcherInfo.forEach(function(v){
 		var tempPath = path.join(copyToPath,v.tempName)+'/';
-		var temp = [];
-		v.rsync.forEach(function(_v){
-			// /usr/bin/rsync -WPaz '-e ssh -p 2222' ${TEMP_PATH} sam@61.4.185.111:/zkTest/serverThree/ 2>&1 >> ${rsyncLog}_three.log
-			var command = [rsyncCommand,"'-e ssh -p "+_v.port+"'",tempPath,_v.address,'2>&1','>>',path.join(logPath,_v.logPrefix+'_$(date +%Y-%m-%d).log')].join(' ');
-			temp.push('if [ `ls '+tempPath+' 2>/dev/null|wc -l` -gt 0 ]; then '+command+';fi');
-		});
-		rsyncArr.push({'path':tempPath,'rsync': temp});
+		dealCommand(tempPath,v.rsync);
 	});
-	rsyncArr.push({'path':path.join(copyToPath,config.deletedFileName),'rsync': config.deleteRsync});
+	dealCommand(path.join(copyToPath,config.deletedFileName),config.deleteRsync);
 
 	function deal(callback){
 		dealTreeMemory.getDataFromMemory(function(){
@@ -77,7 +86,7 @@ var currentDir = __dirname;
 					callback();
 				}else{
 					util.command('rm -rf '+rsyncInfo.path,function(){
-						_log('rm',rsyncInfo.path);
+						_logDeal('rm',rsyncInfo.path);
 						callback();
 					});
 				}
@@ -100,7 +109,7 @@ var currentDir = __dirname;
 			deal(function(){
 				var time = (+new Date() - startTime);
 				usedTime += time+delay;
-				_log('takes '+time+'ms');
+				_logRun('takes '+time+'ms');
 				if(usedTime < totalRunTime){
 					setTimeout(run,delay);
 				}

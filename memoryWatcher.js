@@ -2,18 +2,20 @@
 
 var fs = require('fs');
 var path = require('path');
+var config = require('./config/index');
 var watcherUtil = require('./util');
 var Watcher = require('./watcher').Watcher;
-
 var Node = require('./node');
 
+(function(){
+	watcherUtil.sysError(config.logPath);
+})();
 /*支持运行多个监控，只要指定不同的配置文件*/
 (function(){
 	var args = process.argv;
 	if(args.length >= 2){
 		var configPath = args[2] && (args[2].replace(/^\s+|\s+$/,''));
 		(function(){
-			var config = require('./config/index');
 			watcherUtil.mkdirSync(path.normalize(config.copyToPath));
 			
 			// var watcherBasePath = path.normalize(config.watchPath.base);

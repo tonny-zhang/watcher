@@ -89,7 +89,7 @@ Node.prototype.deletePath = function(p){
 	var temp = pathArr.shift();
 	var currentNode = this.tree;
 	var str = '';
-	while(temp && currentNode){
+	while(temp && (currentNode || currentNode == 0)){
 		str += '["'+temp+'"]';
 		currentNode = currentNode[temp];
 		temp = pathArr.shift();
