@@ -20,8 +20,8 @@
   3. 运行程序文件锁（crontab里的设置）
   4. 临时文件存放位置（config.copyToPath）
   5. rsync采用ssh认证码机制，一定要确保运行程序用户ssh已经认证
-  
-  crontab里配置`*/1 * * * * /usr/bin/flock -xn /var/run/watcherRun.lock -c 'node /tonny/nodejs/watcher/run.js > /tonny/log/crontab_run.log 2>&1'`
+
+  crontab里配置  `*/1 * * * * /usr/bin/flock -xn /var/run/watcherRun.lock -c 'node /tonny/nodejs/watcher/run.js > /tonny/log/crontab_run.log 2>&1'`
 
 ## 可能遇到问题
 ### 环境安装
