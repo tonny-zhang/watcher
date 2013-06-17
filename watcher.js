@@ -11,7 +11,6 @@ var Inotify = (function(){
         }
         return obj;
     }
-    
 })();
 var fs = require('fs'),
     path   = require('path')
@@ -121,10 +120,17 @@ exports.Watcher = (function(){
     	var mask = event.mask;
         var fileName = event.name || '';
         var watch = event.watch;
+        var watchPath = watchPathList[watch];
+        //保证非监控，不触发回调（尤其是监控目录的父级目录）
+        var subPathInfo = subPathCache[watchPath];
+
         try{
-            var fullname = path.join(watchPathList[watch], fileName);
+            var fullname = path.join(watchPath, fileName);
+            if(subPathInfo && !~subPathInfo.indexOf(fullname)){
+                return;
+            }
         }catch(e){
-            _error('error',[watch,fileName,watchPathList[watch]].join('_'));
+            _error('error',[watch,fileName,watchPath].join('_'));
         }
         var type;
         /*新建文件时，先触发创建再触发修改*/
