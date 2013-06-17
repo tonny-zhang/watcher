@@ -121,11 +121,11 @@ exports.Watcher = (function(){
         var fileName = event.name || '';
         var watch = event.watch;
         var watchPath = watchPathList[watch];
-        //保证非监控，不触发回调（尤其是监控目录的父级目录）
-        var subPathInfo = subPathCache[watchPath];
 
         try{
             var fullname = path.join(watchPath, fileName);
+            //保证非监控，不触发回调（尤其是监控目录的父级目录）
+            var subPathInfo = subPathCache[watchPath];
             if(subPathInfo && !~subPathInfo.indexOf(fullname)){
                 return;
             }
