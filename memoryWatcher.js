@@ -14,7 +14,7 @@ var Node = require('./node');
 (function(){
 	var args = process.argv;
 	if(args.length >= 2){
-		var configPath = args[2] && (args[2].replace(/^\s+|\s+$/,''));
+		// var configPath = args[2] && (args[2].replace(/^\s+|\s+$/,''));
 		(function(){
 			watcherUtil.mkdirSync(path.normalize(config.copyToPath));
 			

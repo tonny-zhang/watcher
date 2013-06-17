@@ -214,7 +214,6 @@ exports.extend = function(a,b,c,d){
 exports.sysError = function(logPath){
 	var errorLog = exports.prefixLogSync(logPath,'err');
 	process.on('uncaughtException',function(e){
-		console.log(typeof e,Object.prototype.toString.call(e),e);
 		errorLog('sysErr',e);
 	});
 }
