@@ -16,7 +16,18 @@ var config = {
 			]
 		},
 		{
-			'path': 'd:/test/html',
+			'path': 'd:/test/html/a/b',
+			'rsync': [{
+					'address': 'sam@61.4.185.111:/zkTest/serverOne/',
+					'port': 2222
+				}, {
+					'address': 'sam@61.4.185.111:/zkTest/serverTwo/'
+				}
+			]
+		}
+		,
+		{
+			'path': 'd:/test/html/a1/b1',
 			'rsync': [{
 					'address': 'sam@61.4.185.111:/zkTest/serverOne/',
 					'port': 2222

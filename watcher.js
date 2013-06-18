@@ -47,7 +47,7 @@ exports.Watcher = (function(){
     util.inherits(Watcher,EventEmitter);
 
     var subPathSep = '||';//监控路径分隔符
-    var subPathCache = subPathSep;
+    var subPathCache = '';
     /*给指定目录添加监控，会自动递归监控子目录*/
     Watcher.prototype.addWatch = function(watchPath,subPath){
     	var _this = this;
@@ -55,7 +55,7 @@ exports.Watcher = (function(){
         //不是根目录或指定子目录过滤掉
         if(subPath){
             subPath = subPath.join(subPathSep);
-            subPathCache += subPath;
+            subPathCache += subPathSep+subPath;
         }
         if(!~subPathCache.indexOf(subPathSep+watchPath)){
             return;
@@ -83,9 +83,9 @@ exports.Watcher = (function(){
         this.emit(eventType,param);
         return this;
     }
-    var watchingNum = 1;
+    var watchingNum = 0;
     var _inotifyAddWatch = function(watcher,_path){
-        if(watchPathList[_path]){
+        if(watchPathList[_path] || !fs.existsSync(_path)){
             return;
         }
     	var dir = {
@@ -96,7 +96,7 @@ exports.Watcher = (function(){
             }
         };
         var watch = inotify.addWatch(dir);
-        if(watch){
+        if(watch > -1){
             if(now - fs.statSync(_path).mtime.getTime() < createDelay){
                 //这里回调创建目录事件，防止`mkdir -p ./a/b/c/d`这种递归创建
                 watcher._emit(Watcher.CREATE_DIR,_path,path.basename(_path),Watcher.TYPE_DIR);
