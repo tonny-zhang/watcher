@@ -55,11 +55,26 @@ var currentDir = __dirname;
 	});
 	dealCommand(path.join(copyToPath,config.deletedFileName),config.deleteRsync);
 
-	function deal(callback){
-		dealTreeMemory.getDataFromMemory(function(){
+	
+	var _afterGetData = (function(){
+		var isSyncExec = true;//是否同步执行每个监控目录的rsync
+		return isSyncExec?function(callback){
+			//每个监控目录的rsync要保证同步执行，保证一个机器的rsync的连接数最小
+			var _tempRsyncArr = rsyncArr.slice(0);
+			var _exec = function(){
+				var info = _tempRsyncArr.shift();
+				if(info){
+					rsync(info,function(){
+						_exec();
+					});
+				}else{
+					callback();
+				}
+			}
+			_exec();
+		}:function(callback){
 			var _runNum = rsyncArr.length;
 			var _runedNum = 0;
-			var _errInfo = '';
 			var _cb = function(){
 				if(_runedNum == _runNum){
 					callback();		
@@ -71,6 +86,11 @@ var currentDir = __dirname;
 					_cb();
 				});
 			});
+		}
+	})();
+	function deal(callback){
+		dealTreeMemory.getDataFromMemory(function(){
+			_afterGetData(callback);
 		});
 	}
 	function rsync(rsyncInfo,callback){
