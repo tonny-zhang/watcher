@@ -35,13 +35,15 @@ var currentDir = __dirname;
 	var rsyncArr = [];
 	var copyToPath = path.normalize(config.copyToPath);
 	
-	var dealCommand = function(rsyncPath,rsyncInfo){
+	var dealCommand = function(rsyncPath,rsyncInfo,watcherPath){
 		if(rsyncPath && util.isArray(rsyncInfo) && rsyncInfo.length > 0){
 			var temp = [];
 			rsyncInfo.forEach(function(v){
-				var command = [rsyncCommand,"'-e ssh -p "+v.port+"'",rsyncPath,v.address,'2>&1','>>',path.join(logPath,v.logPrefix+'_$(date +%Y-%m-%d).log')].join(' ');
-				// temp.push('if [ `ls '+rsyncPath+' 2>/dev/null|wc -l` -gt 0 ]; then '+command+';fi');
-				temp.push(command);
+				var _logPath = path.join(logPath,v.logPrefix+'_$(date +%Y-%m-%d).log');
+				var startCommand = "echo $(date '+%Y-%m-%d %H:%M:%S') "+(watcherPath||rsyncPath)+' >> '+_logPath;
+				var command = [rsyncCommand,"'-e ssh -p "+v.port+"'",rsyncPath,v.address,'2>&1','>>',_logPath].join(' ');
+				var endCommand = "echo $(date '+%Y-%m-%d %H:%M:%S')  end >> "+_logPath;
+				temp.push([startCommand,command,endCommand].join(';'));
 			});
 			rsyncArr.push({'path':rsyncPath,'rsync': temp});
 		}
@@ -49,7 +51,7 @@ var currentDir = __dirname;
 	//处理同步命令处理
 	watcherInfo.forEach(function(v){
 		var tempPath = path.join(copyToPath,v.tempName)+'/';
-		dealCommand(tempPath,v.rsync);
+		dealCommand(tempPath,v.rsync,v.path);
 	});
 	dealCommand(path.join(copyToPath,config.deletedFileName),config.deleteRsync);
 

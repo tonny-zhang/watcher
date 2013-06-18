@@ -46,20 +46,18 @@ exports.Watcher = (function(){
     }
     util.inherits(Watcher,EventEmitter);
 
-    var subPathCache = '||';
+    var subPathSep = '||';//监控路径分隔符
+    var subPathCache = subPathSep;
     /*给指定目录添加监控，会自动递归监控子目录*/
     Watcher.prototype.addWatch = function(watchPath,subPath){
     	var _this = this;
         watchPath = path.normalize(watchPath);
         //不是根目录或指定子目录过滤掉
-        // if(_this.subPath && !_this.subPath.test(watchPath)){
-        //     return;
-        // }
         if(subPath){
-            subPath = subPath.join('||');
+            subPath = subPath.join(subPathSep);
             subPathCache += subPath;
         }
-        if(!~subPathCache.indexOf(watchPath)){
+        if(!~subPathCache.indexOf(subPathSep+watchPath)){
             return;
         }
         _inotifyAddWatch(_this,watchPath);
@@ -124,7 +122,7 @@ exports.Watcher = (function(){
         try{
             var fullname = path.join(watchPath, fileName);
             //保证非监控，不触发回调（尤其是监控目录的父级目录）
-            if(!~subPathCache.indexOf(watchPath)){
+            if(!~subPathCache.indexOf(subPathSep+watchPath)){
                 return;
             }
         }catch(e){
