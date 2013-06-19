@@ -4,7 +4,7 @@ var Inotify = (function(){
     try{
         return require('inotify').Inotify;
     }catch(e){
-        var cacheNum = 0;
+        var cacheNum = 1;
         var obj = function(){}
         obj.prototype.addWatch = function(){
             return cacheNum++;
@@ -127,7 +127,7 @@ exports.Watcher = (function(){
             }
         };
         var watch = inotify.addWatch(dir);
-        if(watch > -1){
+        if(watch){
             if(now - fs.statSync(_path).mtime.getTime() < createDelay){
                 //这里回调创建目录事件，防止`mkdir -p ./a/b/c/d`这种递归创建
                 watcher._emit(Watcher.CREATE_DIR,_path,path.basename(_path),Watcher.TYPE_DIR);
