@@ -18,6 +18,40 @@ var fs = require('fs'),
     EventEmitter = require("events").EventEmitter;
 var watcherUtil = require('./util');
 
+var _innerUtil = (function(){
+    var util = {};
+    //检测是不是监控目录及子目录
+    (function(){
+        var watchFilter = function(){
+            this.watchingPathReg = [];
+        };
+        watchFilter.prototype.addFilter = function(_path){
+            if(!_path){
+                return;
+            }
+            if(!watcherUtil.isArray(_path)){
+                _path = [_path];
+            } 
+            _path.forEach(function(v,i){ 
+                _path[i] = new RegExp('^'+v+'(/.+?)?$');
+            });
+            this.watchingPathReg = this.watchingPathReg.concat(_path);
+        }
+        watchFilter.prototype.isWatching = function(_path){
+            var reg = this.watchingPathReg;
+            for(var i = 0,j=reg.length;i<j;i++){
+                if(reg[i].test(_path)){
+                    return true;
+                }
+            }
+            return false;
+        }
+        util.watchFilter = watchFilter;
+    })();
+    return util;
+})();
+//用于测试
+exports._innerUtil = _innerUtil;
 var now = +new Date();//程序第一次启动时，可操作指定时间前生成或修改的文件或目录
 exports.Watcher = (function(){
     var config = require('./config');
@@ -43,21 +77,18 @@ exports.Watcher = (function(){
     	}
         this.options = options = watcherUtil.extend({},defaultOptions,options);
         this.ignorePath = options.ignorePath && (util.isRegExp(options.ignorePath)?options.ignorePath:new RegExp(options.ignorePath.replace('.','\\\.').replace('*','.*')));
+        this.watchFilter = new _innerUtil.watchFilter();
     }
     util.inherits(Watcher,EventEmitter);
-
-    var subPathSep = '||';//监控路径分隔符
-    var subPathCache = '';
     /*给指定目录添加监控，会自动递归监控子目录*/
     Watcher.prototype.addWatch = function(watchPath,subPath){
     	var _this = this;
         watchPath = path.normalize(watchPath);
         //不是根目录或指定子目录过滤掉
+        /*当有subPath时，说明是程序计算出的父级目录，这时不用去判断有没有在监控列表里*/
         if(subPath){
-            subPath = subPath.join(subPathSep);
-            subPathCache += subPathSep+subPath;
-        }
-        if(!~subPathCache.indexOf(subPathSep+watchPath)){
+            _this.watchFilter.addFilter(subPath);
+        }else if(!_this.watchFilter.isWatching(watchPath)){
             return;
         }
         _inotifyAddWatch(_this,watchPath);
@@ -122,7 +153,7 @@ exports.Watcher = (function(){
         try{
             var fullname = path.join(watchPath, fileName);
             //保证非监控，不触发回调（尤其是监控目录的父级目录）
-            if(!~subPathCache.indexOf(subPathSep+watchPath)){
+            if(!watcher.watchFilter.isWatching(fullname)){
                 return;
             }
         }catch(e){
