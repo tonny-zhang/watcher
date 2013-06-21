@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MAX_NUM=999999
+MAX_NUM=9999999
 if [ `cat /proc/sys/fs/inotify/max_user_watches` -lt $MAX_NUM ];then
 	echo $MAX_NUM > /proc/sys/fs/inotify/max_user_watches
 

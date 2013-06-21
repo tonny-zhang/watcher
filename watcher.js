@@ -48,6 +48,13 @@ var _innerUtil = (function(){
         }
         util.watchFilter = watchFilter;
     })();
+    (function(){
+        var cpuNum = Math.floor(require('os').cpus().length / 2);
+        
+        util.multyTask = function(){
+
+        }
+    })();
     return util;
 })();
 //用于测试
@@ -94,15 +101,33 @@ exports.Watcher = (function(){
         _inotifyAddWatch(_this,watchPath);
         if(_this.options.isRecursive){
             try{
-                var files= fs.readdirSync(watchPath);
-                files.forEach(function(fileName){
-                    var filePath = path.join(watchPath,fileName);
-                    var stat = fs.statSync(filePath);
-                    if(stat.isDirectory()){
-                        _this.addWatch(filePath);
-                    }else if(now - stat.mtime.getTime() < createDelay){//当小于指定时间的话，可视为新创建或修改的数据
-                        _this._emit(Watcher.MODIFY,filePath,fileName,Watcher.TYPE_FILE);
+                // var files= fs.readdirSync(watchPath);
+                // files.forEach(function(fileName){
+                //     var filePath = path.join(watchPath,fileName);
+                //     var stat = fs.statSync(filePath);
+                //     if(stat.isDirectory()){
+                //         _this.addWatch(filePath);
+                //     }else if(now - stat.mtime.getTime() < createDelay){//当小于指定时间的话，可视为新创建或修改的数据
+                //         _this._emit(Watcher.MODIFY,filePath,fileName,Watcher.TYPE_FILE);
+                //     }
+                // });
+                fs.readdir(watchPath,function(err,files){
+                    if(err){
+                        return _error('readdir error',watchPath,err);
                     }
+                    files.forEach(function(fileName){
+                        var filePath = path.join(watchPath,fileName);
+                        fs.stat(filePath,function(errStat, stat){
+                            if(err){
+                                return _error('stat error',filePath,errStat);
+                            }
+                            if(stat.isDirectory()){
+                                _this.addWatch(filePath);
+                            }else if(now - stat.mtime.getTime() < createDelay){//当小于指定时间的话，可视为新创建或修改的数据
+                                _this._emit(Watcher.MODIFY,filePath,fileName,Watcher.TYPE_FILE);
+                            }
+                        });
+                    });
                 });
             }catch(e){}
         }
@@ -183,13 +208,11 @@ exports.Watcher = (function(){
                 var _watch = watchPathList[fullname];
                 delete watchPathList[_watch];
                 delete watchPathList[fullname];
-                delete subPathCache[fullname];
             }
         }else if(mask & Inotify.IN_DELETE_SELF){
             var _path = watchPathList[watch];
             delete watchPathList[watch];
             delete watchPathList[_path];
-            delete subPathCache[_path];
         }
         if(type){
         	watcher._emit(type,fullname,fileName,mask & Inotify.IN_ISDIR?Watcher.TYPE_DIR:Watcher.TYPE_FILE);
