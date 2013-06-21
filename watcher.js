@@ -31,11 +31,12 @@ var _innerUtil = (function(){
             }
             if(!watcherUtil.isArray(_path)){
                 _path = [_path];
-            } 
+            }
+            var _tempArr = [];
             _path.forEach(function(v,i){ 
-                _path[i] = new RegExp('^'+v+'(/.+?)?$');
+                _tempArr[i] = new RegExp('^'+v+'(/.+?)?$');
             });
-            this.watchingPathReg = this.watchingPathReg.concat(_path);
+            this.watchingPathReg = this.watchingPathReg.concat(_tempArr);
         }
         watchFilter.prototype.isWatching = function(_path){
             var reg = this.watchingPathReg;
@@ -49,10 +50,54 @@ var _innerUtil = (function(){
         util.watchFilter = watchFilter;
     })();
     (function(){
-        var cpuNum = Math.floor(require('os').cpus().length / 2);
-        
-        util.multyTask = function(){
-
+        //读取由shell遍历文件生成的日志文件
+        util.readFromFile = function(file,callback){
+            var config = require('./config');
+            var _log = watcherUtil.prefixLogSync(config.logPath,'init');
+            callback || (callback = function(){});
+            var startTime = +new Date();
+            var modifyTime;
+            var offset = 0;
+            var totalNum = 0;
+            var _failNum = 10;
+            var _failedNum = 0;
+            var _read = function(){
+                var stat = fs.statSync(file);
+                var _mTime = stat.mtime.getTime();
+                /*shell读取目录信息写日志文件，nodejs读日志文件减小系统IO，每次判断日志文件修改时间保证读取文件完整性*/
+                if(_mTime != modifyTime){
+                    _failedNum = 0;//有数据时失败次数重置
+                    modifyTime = _mTime;
+                    var fileSize = stat.size;
+                    var readStream = fs.createReadStream(file,{start:offset,end:fileSize});
+                    readStream.setEncoding('utf8');
+                    var dataInfo = [];
+                    var inptext = '';
+                    readStream.on('data', function (data) {
+                        offset += data.length;
+                        inptext += data;
+                        var arr = inptext.split('\n');
+                        inptext = arr.pop();//最后一个出栈
+                        totalNum += arr.length;
+                        setTimeout(function(){
+                            callback(arr);
+                        },0)
+                    });
+                    readStream.on('end', function (close) {
+                        setTimeout(_read,1000);//给充足的时间让系统更新文件时间
+                    });
+                }else{
+                    if(++_failedNum >= _failNum){
+                        _log('read file down',file,totalNum,+new Date()-startTime+' ms');
+                        watcherUtil.command(['rm -rf',file].join(' '),function(){
+                            _log('rm init file',file);
+                        });
+                    }else{
+                        setTimeout(_read,1000);//给充足的时间让系统更新文件时间
+                    }
+                }
+            }
+            _read();
         }
     })();
     return util;
@@ -87,30 +132,33 @@ exports.Watcher = (function(){
         this.watchFilter = new _innerUtil.watchFilter();
     }
     util.inherits(Watcher,EventEmitter);
+    Watcher.initAddWatchFromFile = _innerUtil.readFromFile;
+    /*外部调用初始化*/
+    Watcher.prototype.initAddWatch = function(watchPath,subPath){
+        this.addWatch(watchPath,subPath,true);
+    }
     /*给指定目录添加监控，会自动递归监控子目录*/
-    Watcher.prototype.addWatch = function(watchPath,subPath){
+    Watcher.prototype.addWatch = function(watchPath,subPath,isInit){
     	var _this = this;
         watchPath = path.normalize(watchPath);
         //不是根目录或指定子目录过滤掉
         /*当有subPath时，说明是程序计算出的父级目录，这时不用去判断有没有在监控列表里*/
         if(subPath){
             _this.watchFilter.addFilter(subPath);
+            //把要监控的子目录优先添加
+            setTimeout(function(){
+                if(watcherUtil.isArray(subPath)){
+                    subPath.forEach(function(v){
+                        _this.addWatch(v,null,true);
+                    });
+                }
+            },0);
         }else if(!_this.watchFilter.isWatching(watchPath)){
             return;
         }
         _inotifyAddWatch(_this,watchPath);
-        if(_this.options.isRecursive){
+        if(_this.options.isRecursive && !isInit){
             try{
-                // var files= fs.readdirSync(watchPath);
-                // files.forEach(function(fileName){
-                //     var filePath = path.join(watchPath,fileName);
-                //     var stat = fs.statSync(filePath);
-                //     if(stat.isDirectory()){
-                //         _this.addWatch(filePath);
-                //     }else if(now - stat.mtime.getTime() < createDelay){//当小于指定时间的话，可视为新创建或修改的数据
-                //         _this._emit(Watcher.MODIFY,filePath,fileName,Watcher.TYPE_FILE);
-                //     }
-                // });
                 fs.readdir(watchPath,function(err,files){
                     if(err){
                         return _error('readdir error',watchPath,err);
@@ -132,6 +180,13 @@ exports.Watcher = (function(){
             }catch(e){}
         }
     	return this;
+    }
+    Watcher.prototype.initAddFile = function(file){
+        file = path.normalize(file);
+        //保证非监控，不触发回调（尤其是监控目录的父级目录）
+        if(this.watchFilter.isWatching(file)){
+            this._emit(Watcher.MODIFY,file,path.basename(file),Watcher.TYPE_FILE);
+        }
     }
     Watcher.prototype._emit = function(eventType,fullname,fileName,filetype){
         var param = {fullname:fullname,filename:fileName,name:eventType,filetype:filetype};

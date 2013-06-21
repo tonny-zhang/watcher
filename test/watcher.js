@@ -22,3 +22,4 @@ var watcherCache = config.watcher.info;
 for(var i in watcherCache){
     watcher.addWatch(i,watcherCache[i]);
 }
+watcher.initAddFile('d:/test/html/a/1.txt');

@@ -2,19 +2,27 @@
 DIR_LOG=/tonny/log_read/dir.log
 FILE_LOG=/tonny/log_read/file.log
 
-echo $(date '+%Y-%m-%d %H:%M:%S')" start" >> $DIR_LOG
+INIT_PATH=${1}
+BEGIN_SECOND=${2}
+echo $(date '+%Y-%m-%d %H:%M:%S')" start"
 function ergodic(){
         for file in ` ls $1 `
         do
-                if [ -d $1"/"$file ]
+                _tempFile=$1"/"$file
+                if [ -d $_tempFile ]
                 then
-        				echo $1"/"$file >> $DIR_LOG
-                        ergodic $1"/"$file
+        		echo $_tempFile
+                        ergodic $_tempFile
                 else
-                        echo $1"/"$file >> $FILE_LOG
+                        if [ $BEGIN_SECOND ];then
+                                if [ `stat -c %Y $_tempFile` -gt $BEGIN_SECOND ];then
+                                        echo $_tempFile"|"
+                                fi
+                        else
+                                echo $_tempFile"|"
+                        fi
                 fi
         done
 }
-INIT_PATH="/tonny/test"
 ergodic $INIT_PATH
-echo $(date '+%Y-%m-%d %H:%M:%S')" end" >> $DIR_LOG
+echo $(date '+%Y-%m-%d %H:%M:%S')" end"

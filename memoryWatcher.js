@@ -14,11 +14,10 @@ var Node = require('./node');
 (function(){
 	var args = process.argv;
 	if(args.length >= 2){
-		// var configPath = args[2] && (args[2].replace(/^\s+|\s+$/,''));
 		(function(){
-			watcherUtil.mkdirSync(path.normalize(config.copyToPath));
-			
-			// var watcherBasePath = path.normalize(config.watchPath.base);
+			var copyToPath = path.normalize(config.copyToPath);
+			watcherUtil.mkdirSync(copyToPath);
+
 			var tree = new Node('/',config.port);
 			var watcher = new Watcher({ignorePath:/^\..+/})
 			.on(Watcher.CREATE_FILE,function(d){
@@ -35,14 +34,32 @@ var Node = require('./node');
 			});
 			var watcherCache = config.watcher.info;
 			for(var i in watcherCache){
-				watcher.addWatch(i,watcherCache[i]);
+				watcher.initAddWatch(i,watcherCache[i]);
 			}
-			/*要同步初始化的文件夹及文件，保证之前已经注册成功事件*/
-			// var watchSubPath = config.watchPath.sub;
-			// if(watchSubPath && watchSubPath.length > 0){
-			// 	watcher.filterSubPath(watcherBasePath,watchSubPath);
-			// }
-			// watcher.addWatch(watcherBasePath);
+			var currentSecond = Math.round((+new Date() - config.create_delay)/1000);
+			(currentSecond.toString().length == 10) || (currentSecond = '');
+			var _log = watcherUtil.logSync(config.logPath);
+			config.watcher.forEach(function(info){
+				var _path = info.path;
+				var tempFile = path.join(copyToPath,watcherUtil.md5(new Date()+_path));
+				var command = ['nohup',path.join(__dirname,'./shell/readdir.sh'),_path,currentSecond,'>>',tempFile,'2>&1 &'].join(' ');
+				_log('readdir',currentSecond,_path,tempFile);
+				watcherUtil.command(command);
+				setTimeout(function(){
+					Watcher.initAddWatchFromFile(tempFile,function(lines){
+						if(watcherUtil.isArray(lines)){
+							lines.forEach(function(line){
+								line = line.split('|');
+								if(line.length == 2){
+									watcher.initAddFile(line[0]);
+								}else{
+									watcher.initAddWatch(line[0],null,true);
+								}
+							});
+						}
+					});
+				},5);
+			});
 		})();
 	}
 })();
