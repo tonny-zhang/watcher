@@ -202,6 +202,7 @@ exports.extend = function(a,b,c,d){
 	exports.command = function(command,callback){
 		callback || (callback = function(){});
 		var runCommand = exec(command,function(error, stdout, stderr){
+			console.log(error,stdout,stderr);
 			if(error || stderr){
 				callback(error||stderr);
 			}else{

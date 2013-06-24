@@ -53,7 +53,7 @@ var Node = require('./node');
 								if(line.length == 2){
 									watcher.initAddFile(line[0]);
 								}else{
-									watcher.initAddWatch(line[0],null,true);
+									watcher.initAddWatch(line[0]);
 								}
 							});
 						}

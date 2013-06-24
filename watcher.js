@@ -59,8 +59,10 @@ var _innerUtil = (function(){
             var modifyTime;
             var offset = 0;
             var totalNum = 0;
-            var _failNum = 10;
+            var _failNum = 20; //保证读取大文件的完整性
             var _failedNum = 0;
+            var _delay = 1000;
+            var inptext = '';
             var _read = function(){
                 var stat = fs.statSync(file);
                 var _mTime = stat.mtime.getTime();
@@ -72,7 +74,6 @@ var _innerUtil = (function(){
                     var readStream = fs.createReadStream(file,{start:offset,end:fileSize});
                     readStream.setEncoding('utf8');
                     var dataInfo = [];
-                    var inptext = '';
                     readStream.on('data', function (data) {
                         offset += data.length;
                         inptext += data;
@@ -84,16 +85,23 @@ var _innerUtil = (function(){
                         },0)
                     });
                     readStream.on('end', function (close) {
-                        setTimeout(_read,1000);//给充足的时间让系统更新文件时间
+                        setTimeout(_read,_delay);//给充足的时间让系统更新文件时间
                     });
                 }else{
                     if(++_failedNum >= _failNum){
-                        _log('read file down',file,totalNum,+new Date()-startTime+' ms');
-                        watcherUtil.command(['rm -rf',file].join(' '),function(){
-                            _log('rm init file',file);
+                        if(inptext){//处理上次处理完后的最后一个
+                            callback([inptext]);
+                        }
+                        watcherUtil.command(['wc','-l',file].join(' '),function(error,num){
+                            num = num.replace(/\s*(\d+)[\s\S]*/,'$1');
+                            _log('"read file down"','['+num+']',totalNum,file,+new Date()-startTime+' ms');
+                            watcherUtil.command(['rm -rf',file].join(' '),function(){
+                                _log('rm init file',file);
+                            });
                         });
+                        
                     }else{
-                        setTimeout(_read,1000);//给充足的时间让系统更新文件时间
+                        setTimeout(_read,_delay);//给充足的时间让系统更新文件时间
                     }
                 }
             }
@@ -149,11 +157,11 @@ exports.Watcher = (function(){
             setTimeout(function(){
                 if(watcherUtil.isArray(subPath)){
                     subPath.forEach(function(v){
-                        _this.addWatch(v,null,true);
+                        _this.initAddWatch(v);
                     });
                 }
             },0);
-        }else if(!_this.watchFilter.isWatching(watchPath)){
+        }else if(!isInit || !_this.watchFilter.isWatching(watchPath)){//当isInit为true时，可以保证都是要监控的目录下的子目录，减少匹配的计算量
             return;
         }
         _inotifyAddWatch(_this,watchPath);
