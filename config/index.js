@@ -54,6 +54,7 @@ var config = {
 	rsync: { //配置rsync
 		bin: '/usr/bin/rsync',
 		param: "-WPaz",
+		user: 'sam',
 		defaultPort: 2222
 	},
 	dealLogPrefix: 'deal',//处理内存数据日志前缀

@@ -202,13 +202,16 @@ exports.extend = function(a,b,c,d){
 	exports.command = function(command,callback){
 		callback || (callback = function(){});
 		var runCommand = exec(command,function(error, stdout, stderr){
-			console.log(error,stdout,stderr);
 			if(error || stderr){
 				callback(error||stderr);
 			}else{
 				callback(null,stdout);
 			}
 		});
+	}
+	exports.command.su = function(user,command,callback){
+		command = ['su - '+user+' << EOF',command,'EOF'].join('\n');
+		exports.command(command,callback);
 	}
 })();
 	

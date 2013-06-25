@@ -56,7 +56,6 @@ var _innerUtil = (function(){
             var _log = watcherUtil.prefixLogSync(config.logPath,'init');
             callback || (callback = function(){});
             var startTime = +new Date();
-            var modifyTime;
             var offset = 0;
             var totalNum = 0;
             var _failNum = 20; //保证读取大文件的完整性
@@ -65,12 +64,10 @@ var _innerUtil = (function(){
             var inptext = '';
             var _read = function(){
                 var stat = fs.statSync(file);
-                var _mTime = stat.mtime.getTime();
+                var fileSize = stat.size;
                 /*shell读取目录信息写日志文件，nodejs读日志文件减小系统IO，每次判断日志文件修改时间保证读取文件完整性*/
-                if(_mTime != modifyTime){
+                if(offset != fileSize){
                     _failedNum = 0;//有数据时失败次数重置
-                    modifyTime = _mTime;
-                    var fileSize = stat.size;
                     var readStream = fs.createReadStream(file,{start:offset,end:fileSize});
                     readStream.setEncoding('utf8');
                     var dataInfo = [];
@@ -90,7 +87,9 @@ var _innerUtil = (function(){
                 }else{
                     if(++_failedNum >= _failNum){
                         if(inptext){//处理上次处理完后的最后一个
-                            callback([inptext]);
+                            inptext = inptext.split('\n');
+                            totalNum += inptext.length;
+                            callback(inptext);
                         }
                         watcherUtil.command(['wc','-l',file].join(' '),function(error,num){
                             num = num.replace(/\s*(\d+)[\s\S]*/,'$1');
