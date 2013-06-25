@@ -58,6 +58,7 @@ function index(config){
 		cache[_parentDir] || (cache[_parentDir] = []); //对上一级进行监控，防止指定监控的文件夹不存在
 		cache[_parentDir].push(_p);
 	});
+	// console.log(_watcherConfig,cache);
 	config.watcher = _watcherConfig;
 	config.watcher.info = cache;
 	return config;

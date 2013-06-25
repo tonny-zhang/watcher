@@ -2,10 +2,11 @@
 
 var fs = require('fs');
 var path = require('path');
-var config = require('./config/index');
+var config = require('./config');
 var watcherUtil = require('./util');
 var Watcher = require('./watcher').Watcher;
 var Node = require('./node');
+var createHttpServer = require('./createHttpServer');
 
 (function(){
 	watcherUtil.sysError(config.logPath);
@@ -14,11 +15,24 @@ var Node = require('./node');
 (function(){
 	var args = process.argv;
 	if(args.length >= 2){
+		var _logWatcher = watcherUtil.prefixLogSync(config.logPath,'watcher');
+		if(args.length == 3 && args[2] == 'reload'){
+			/*重新加载配置*/
+			watcherUtil.curl(config.host,config.port,'/?reload=1',function(err){
+				_logWatcher('reload',err||'Y');
+			});
+			return;
+		}
 		(function(){
 			var copyToPath = path.normalize(config.copyToPath);
 			watcherUtil.mkdirSync(copyToPath);
+			var tree = new Node('/');
+			tree.on('addPath',function(_path){
+				_logWatcher('addPath',_path);
+			}).on('deletePath',function(_path){
+				_logWatcher('deletePath',_path);
+			});
 
-			var tree = new Node('/',config.port);
 			var watcher = new Watcher({ignorePath:/^\..+/})
 			.on(Watcher.CREATE_FILE,function(d){
 				tree.addPath(d.fullname,true);
@@ -32,33 +46,19 @@ var Node = require('./node');
 			.on(Watcher.DELETE,function(d){
 				tree.deletePath(d.fullname);
 			});
+			if(config.port){
+				createHttpServer(config.port,tree,watcher);
+			}
+
 			var watcherCache = config.watcher.info;
 			for(var i in watcherCache){
 				watcher.initAddWatch(i,watcherCache[i]);
 			}
-			var currentSecond = Math.round((+new Date() - config.create_delay)/1000);
-			(currentSecond.toString().length == 10) || (currentSecond = '');
-			var _log = watcherUtil.logSync(config.logPath);
+			if(/win/.test(require('os').platform())){
+				return;
+			}
 			config.watcher.forEach(function(info){
-				var _path = info.path;
-				var tempFile = path.join(copyToPath,watcherUtil.md5(new Date()+_path));
-				var command = ['nohup',path.join(__dirname,'./shell/readdir.sh'),_path,currentSecond,'>>',tempFile,'2>&1 &'].join(' ');
-				_log('readdir',currentSecond,_path,tempFile);
-				watcherUtil.command(command);
-				setTimeout(function(){
-					Watcher.initAddWatchFromFile(tempFile,function(lines){
-						if(watcherUtil.isArray(lines)){
-							lines.forEach(function(line){
-								line = line.split('|');
-								if(line.length == 2){
-									watcher.initAddFile(line[0]);
-								}else{
-									watcher.initAddWatch(line[0]);
-								}
-							});
-						}
-					});
-				},5);
+				watcher.initAddWatchByReadDir(info.path);
 			});
 		})();
 	}

@@ -1,6 +1,4 @@
 /*处理内存中的目录结构信息*/
-
-var http = require('http');
 var config = require('./config/index');
 var path = require('path');
 var util = require('./util');
@@ -75,30 +73,17 @@ function _dealDeleteTree(deleteTree){
 */
 function getDataFromMemory(callback){
 	callback || (callback = function(){});
-	var req = http.get({
-		hostname: config.host,
-		port: config.port
-	},function(res){
-		res.setEncoding('utf8');
-		var data = '';
-		res.on('data',function(d){
-			data += d.toString();
-		}).on('end',function(){
-			if(data){
-				try{
-					_dealData(JSON.parse(data),callback);
-				}catch(e){
-					_log('error getDataFromMemory data wrong!'+e.message);
-					callback();
-				}
-			}else{
-				callback();
+	util.curl(config.host,config.port,'/',function(err,data){
+		if(err){
+			_log('problem with request: ' + e.message);
+		}else{
+			try{
+				_dealData(JSON.parse(data),callback);
+			}catch(e){
+				_log('error getDataFromMemory data wrong!'+e.message);
+				callback(e);
 			}
-		});
-	});
-	req.on('error', function(e) {
-		_log('problem with request: ' + e.message);
-		callback();
+		}
 	});
 }
 /*从json文件中得到目录结构及要删除的信息

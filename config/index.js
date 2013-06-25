@@ -3,6 +3,7 @@ var path = require('path');
 var configUtil = require('../configUtil')
 var config = {
 	isDebug: true,
+	/*更新监控目录可以调用 `node memoryWatcher.js reload` */
 	watcher: [
 		{
 			'path': 'd:/test/html',
@@ -14,7 +15,8 @@ var config = {
 					'address': 'sam@61.4.185.111:/zkTest/serverTwo/'
 				}
 			]
-		},
+		}
+		,
 		{
 			'path': 'd:/test/html/a/b',
 			'rsync': [{
