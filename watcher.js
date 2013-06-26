@@ -281,7 +281,6 @@ exports.Watcher = (function(){
                 _dele(_p,node[i]);
             }
         }
-        _log('removeWatch_test',watchPath,JSON.stringify(subPath));
         _removeWatch(watchPath);
         _dele(watchPath,subPath);  
     }
