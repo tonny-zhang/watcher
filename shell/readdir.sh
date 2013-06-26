@@ -24,5 +24,6 @@ function ergodic(){
                 fi
         done
 }
+echo ''
 ergodic $INIT_PATH
 #echo $(date '+%Y-%m-%d %H:%M:%S')" end"

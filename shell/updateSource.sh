@@ -10,6 +10,7 @@ fi
 logName=$logPath$(date +%Y-%m-%d).log
 chown sam.sam $logPath
 
+echo 10 > $SOURCE_PATH/temp/updateFlag.data
 #insure permision of sam
 su - sam <<EOF
 echo 'start 61.4.185.111'>>$logName

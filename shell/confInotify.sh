@@ -13,6 +13,6 @@ if [ `cat /proc/sys/fs/inotify/max_queued_events` -lt $MAX_NUM ];then
 fi
 
 if [ $IS_KILL_WATCHER ];then
-	./stopWatcher.sh
+	`dirname $0`/stopWatcher.sh
 	echo 'kill watcher,config inotify' >> /tonny/log/conf_inotify_$(date +%Y-%m-%d).log
 fi

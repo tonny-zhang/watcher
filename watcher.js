@@ -124,12 +124,20 @@ var _innerUtil = (function(){
             _read();
         }
         //遍历目录
-        util.readdir = function(dir,copyToPath,currentSecond){
+        util.readdir = function(dir,copyToPath,fromSecond){
+            fromSecond = (fromSecond||'')+'';
+            if(fromSecond.length > 10){
+                fromSecond = Math.round((Number(fromSecond) || 0)/1000)+'';
+            }
+            if(fromSecond.length < 10){
+                //此时时间小于文件创建的最小时间，不用考虑
+                fromSecond = 0;
+            }
             var config = require('./config');
             var _log = watcherUtil.prefixLogSync(config.logPath,'init');
             var tempFile = path.join(copyToPath,watcherUtil.md5(new Date()+dir));
-            var command = ['nohup',path.join(__dirname,'./shell/readdir.sh'),dir,currentSecond,'>>',tempFile,'2>&1 &'].join(' ');
-            _log('readStart',currentSecond,dir,tempFile);
+            var command = ['nohup',path.join(__dirname,'./shell/readdir.sh'),dir,fromSecond||'','>>',tempFile,'2>&1 &'].join(' ');
+            _log('readStart',fromSecond,dir,tempFile);
             watcherUtil.command(command);
             return tempFile;
         }
@@ -169,27 +177,35 @@ exports.Watcher = (function(){
         _watcherCache.push(this);
     }
     util.inherits(Watcher,EventEmitter);
-    /*initAddWatchByReadDir的默认回调*/
-    var _defaultCallback = function(_path,isFile){
-        if(this.watchFilter.isWatching(_path)){
-            if(isFile){
-                this.initAddFile(_path);
-            }else{
-                this.initAddWatch(_path);
-            }
-        }
-    }
+   
     /*提供统一的遍历目录并初始化接口*/
-    Watcher.prototype._readDir = function(dir,callback){
-        callback || (callback = function(){_defaultCallback.apply(_this,arguments)});
+    Watcher.prototype._readDir = function(dir,isInit,callback){
+        if(!fs.statSync(dir).isDirectory()){
+            return;
+        }
         var _this = this;
+        callback || (callback = function(_path,isFile){
+            if(_this.watchFilter.isWatching(_path)){
+                if(isFile){
+                    _this._emit(Watcher.MODIFY,_path,path.basename(_path),Watcher.TYPE_FILE);
+                }else{
+                    if(isInit){
+                        _this.addWatch(_path,true,true);
+                    }else{
+                        _this.addWatch(_path);
+                    }                    
+                }
+            }
+        });
         var tempFile = _innerUtil.readdir(dir,config.copyToPath,now-createDelay);
         setTimeout(function(){
             _innerUtil.readFromFile(tempFile,function(lines){
                 if(watcherUtil.isArray(lines)){
                     lines.forEach(function(line){
-                        line = line.split('|');
-                        callback(line[0],line.length == 2);
+                        if(line){
+                            line = line.split('|');
+                            callback(line[0],line.length == 2);
+                        }
                     });
                 }
             });
@@ -212,7 +228,8 @@ exports.Watcher = (function(){
     }
     /*初始化时添加目录监控(配置文件里的watcher),不过滤，遍历子目录*/
     Watcher.prototype.initAddWatch = function(watchPath){
-        this.addWatch(watchPath,true,false);
+        this.addWatch(watchPath,true,true);
+        this._readDir(watchPath,true);
     }
     /*初始化时添加文件*/
     Watcher.prototype.initAddFile = function(file){
@@ -223,25 +240,18 @@ exports.Watcher = (function(){
         }
     }
     /*给指定目录添加监控，会自动递归监控子目录*/
-    Watcher.prototype.addWatch = function(watchPath,
-                                            isNoUseFilter /*是否不用过滤，默认为false,即过滤*/ ,
-                                            isNoReadSub /*是否不用遍历子目录，默认为false,即遍历*/){
+    Watcher.prototype.addWatch = function(watchPath
+                                           , isNoUseFilter /*是否不用过滤，默认为false,即过滤*/ 
+                                           , isNoReadSub /*是否不用遍历子目录，默认为false,即遍历*/
+                                            ){
     	var _this = this;
         watchPath = path.normalize(watchPath);
         if(!isNoUseFilter && !_this.watchFilter.isWatching(watchPath)){//可以保证都是要监控的目录下的子目录，减少匹配的计算量
             return;
         }
         _inotifyAddWatch(_this,watchPath);
-        if(_this.options.isRecursive && !isNoReadSub){
-            _this._readDir(watchPath,function(_path,isFile){
-                if(_this.watchFilter.isWatching(_path)){
-                    if(isFile){
-                        _this.addWatch(_path);
-                    }else{
-                        _this._emit(Watcher.MODIFY,_path,path.basename(_path),Watcher.TYPE_FILE);
-                    }
-                }
-            });
+        if(!isNoReadSub && _this.options.isRecursive){
+            _this._readDir(watchPath,false);
         }
     	return this;
     }
@@ -252,6 +262,9 @@ exports.Watcher = (function(){
         }
         var _this = this;
         var _removeWatch = function(_path){
+            if(!_path){
+                return;
+            }
             _path = path.normalize(path.join(_path, '.'));
             var _watch = watchPathList[_path];
             inotify.removeWatch(_watch);
@@ -268,6 +281,7 @@ exports.Watcher = (function(){
                 _dele(_p,node[i]);
             }
         }
+        _log('removeWatch_test',watchPath,JSON.stringify(subPath));
         _removeWatch(watchPath);
         _dele(watchPath,subPath);  
     }
@@ -304,23 +318,20 @@ exports.Watcher = (function(){
         	_error('add watch fail:'+_path);
         }
     }
-    var _eventCallback = function(watcher,event){
-    	if(_test(watcher.ignorePath,event.name)){
-    		return;
-    	}
-    	var mask = event.mask;
-        var fileName = event.name || '';
+    var _eventCallback = function(watcher,event){        
+        var mask = event.mask;
         var watch = event.watch;
-        var watchPath = watchPathList[watch];
-
-        try{
+        var watchPath = watchPathList[watch];      
+        var fileName = event.name;
+        if(fileName){
+            if(_test(watcher.ignorePath,fileName)){
+                return;
+            }
             var fullname = path.join(watchPath, fileName);
             //保证非监控，不触发回调（尤其是监控目录的父级目录）
             if(!watcher.watchFilter.isWatching(fullname)){
                 return;
             }
-        }catch(e){
-            _error('error',[watch,fileName,watchPath].join('_'));
         }
         var type;
         /*新建文件时，先触发创建再触发修改*/
@@ -347,8 +358,9 @@ exports.Watcher = (function(){
             var _path = watchPathList[watch];
             delete watchPathList[watch];
             delete watchPathList[_path];
+            fullname = _path;//删除时记录下删除的全路径
         }else if(mask & Inotify.IN_IGNORED){
-            _log('removeWatch',fullname);
+            _log('rmWatcher',fullname||watchPath);
         }
         if(type){
         	watcher._emit(type,fullname,fileName,mask & Inotify.IN_ISDIR?Watcher.TYPE_DIR:Watcher.TYPE_FILE);

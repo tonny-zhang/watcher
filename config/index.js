@@ -6,18 +6,6 @@ var config = {
 	/*更新监控目录可以调用 `node memoryWatcher.js reload` */
 	watcher: [
 		{
-			'path': 'd:/test/html',
-			'rsync': [{
-					'address': 'sam@61.4.185.111:/zkTest/serverOne/',//同步的目标地址
-					'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
-					'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
-				}, {
-					'address': 'sam@61.4.185.111:/zkTest/serverTwo/'
-				}
-			]
-		}
-		,
-		{
 			'path': 'd:/test/html/a/b',
 			'rsync': [{
 					'address': 'sam@61.4.185.111:/zkTest/serverOne/',
@@ -38,6 +26,18 @@ var config = {
 				}
 			]
 		}
+		// ,
+		// {
+		// 	'path': 'd:/test/html/b1',
+		// 	'rsync': [{
+		// 			'address': 'sam@61.4.185.111:/zkTest/serverOne/',//同步的目标地址
+		// 			'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
+		// 			'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
+		// 		}, {
+		// 			'address': 'sam@61.4.185.111:/zkTest/serverTwo/'
+		// 		}
+		// 	]
+		// }
 	],
 	port: 3333, //文件夹树访问端口
 	host: '127.0.0.1', //文件夹树访问host

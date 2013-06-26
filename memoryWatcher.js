@@ -37,9 +37,10 @@ var createHttpServer = require('./createHttpServer');
 			.on(Watcher.CREATE_FILE,function(d){
 				tree.addPath(d.fullname,true);
 			})
-			.on(Watcher.CREATE_DIR,function(d){
-				tree.addPath(d.fullname);
-			})
+			/*创建文件夹可以不处理，交由创建文件事件处理父级文件夹*/
+			// .on(Watcher.CREATE_DIR,function(d){
+			// 	tree.addPath(d.fullname);
+			// })
 			.on(Watcher.MODIFY,function(d){
 				tree.addPath(d.fullname,d.filetype == Watcher.TYPE_FILE);
 			})
