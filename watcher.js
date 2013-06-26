@@ -169,6 +169,7 @@ exports.Watcher = (function(){
         _watcherCache.push(this);
     }
     util.inherits(Watcher,EventEmitter);
+    /*initAddWatchByReadDir的默认回调*/
     var _defaultCallback = function(_path,isFile){
         if(this.watchFilter.isWatching(_path)){
             if(isFile){
@@ -179,7 +180,7 @@ exports.Watcher = (function(){
         }
     }
     /*提供统一的遍历目录并初始化接口*/
-    Watcher.prototype.initAddWatchByReadDir = function(dir,callback){
+    Watcher.prototype._readDir = function(dir,callback){
         callback || (callback = function(){_defaultCallback.apply(_this,arguments)});
         var _this = this;
         var tempFile = _innerUtil.readdir(dir,config.copyToPath,now-createDelay);
@@ -194,11 +195,26 @@ exports.Watcher = (function(){
             });
         },5);
     };
-    /*外部调用初始化*/
-    Watcher.prototype.initAddWatch = function(watchPath,subPath){
-        this.addWatch(watchPath,subPath,true);
+    /*初始化计算出的父级目录,不过滤，不遍历子目录*/
+    Watcher.prototype.initAddParentWatch = function(watchPath,subPath){
+        var _this = this;
+        _this.addWatch(watchPath,true,true);
+        if(subPath){
+            _this.watchFilter.addFilter(subPath);
+            //把要监控的子目录优先添加
+            if(!watcherUtil.isArray(subPath)){
+                subPath = [subPath];
+            }
+            subPath.forEach(function(v){
+                _this.initAddWatch(v);
+            });
+        }
     }
-    /*外部调用初始化添加文件*/
+    /*初始化时添加目录监控(配置文件里的watcher),不过滤，遍历子目录*/
+    Watcher.prototype.initAddWatch = function(watchPath){
+        this.addWatch(watchPath,true,false);
+    }
+    /*初始化时添加文件*/
     Watcher.prototype.initAddFile = function(file){
         file = path.normalize(file);
         //保证非监控，不触发回调（尤其是监控目录的父级目录）
@@ -207,27 +223,17 @@ exports.Watcher = (function(){
         }
     }
     /*给指定目录添加监控，会自动递归监控子目录*/
-    Watcher.prototype.addWatch = function(watchPath,subPath,isInit){
+    Watcher.prototype.addWatch = function(watchPath,
+                                            isNoUseFilter /*是否不用过滤，默认为false,即过滤*/ ,
+                                            isNoReadSub /*是否不用遍历子目录，默认为false,即遍历*/){
     	var _this = this;
         watchPath = path.normalize(watchPath);
-        //不是根目录或指定子目录过滤掉
-        /*当有subPath时，说明是程序计算出的父级目录，这时不用去判断有没有在监控列表里*/
-        if(subPath){
-            _this.watchFilter.addFilter(subPath);
-            //把要监控的子目录优先添加
-            setTimeout(function(){
-                if(watcherUtil.isArray(subPath)){
-                    subPath.forEach(function(v){
-                        _this.initAddWatch(v);
-                    });
-                }
-            },0);
-        }else if(!isInit && !_this.watchFilter.isWatching(watchPath)){//当isInit为true时，可以保证都是要监控的目录下的子目录，减少匹配的计算量
+        if(!isNoUseFilter && !_this.watchFilter.isWatching(watchPath)){//可以保证都是要监控的目录下的子目录，减少匹配的计算量
             return;
         }
         _inotifyAddWatch(_this,watchPath);
-        if(_this.options.isRecursive && !isInit){
-            _this.initAddWatchByReadDir(watchPath,function(_path,isFile){
+        if(_this.options.isRecursive && !isNoReadSub){
+            _this._readDir(watchPath,function(_path,isFile){
                 if(_this.watchFilter.isWatching(_path)){
                     if(isFile){
                         _this.addWatch(_path);
@@ -384,11 +390,7 @@ exports.Watcher = (function(){
                     _this.removeWatch(v);
                 });
             }else{
-                _this.initAddWatch(i,newWatcherInfo[i]);
-                newWatcherInfo[i].forEach(function(_p){
-                    _this.initAddWatch(_p);
-                    _this.initAddWatchByReadDir(_p);
-                });
+                _this.initAddParentWatch(i,newWatcherInfo[i]);
             }
             delete oldWatcherInfo[i];
         }

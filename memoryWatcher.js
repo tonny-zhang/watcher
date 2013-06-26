@@ -46,20 +46,14 @@ var createHttpServer = require('./createHttpServer');
 			.on(Watcher.DELETE,function(d){
 				tree.deletePath(d.fullname);
 			});
+
 			if(config.port){
 				createHttpServer(config.port,tree,watcher);
 			}
-
 			var watcherCache = config.watcher.info;
 			for(var i in watcherCache){
-				watcher.initAddWatch(i,watcherCache[i]);
+				watcher.initAddParentWatch(i,watcherCache[i]);
 			}
-			if(/win/.test(require('os').platform())){
-				return;
-			}
-			config.watcher.forEach(function(info){
-				watcher.initAddWatchByReadDir(info.path);
-			});
 		})();
 	}
 })();
