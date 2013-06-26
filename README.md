@@ -7,7 +7,7 @@
 这时本解决方案应用而生，采用基于linux内核的文件触发式系统(Inotify)并采用缓存更新队列，最后选择易于开发的Nodejs进行开发，并结合crontab模拟出小时间片断处理间隔，让同步方案可以在很小的时间间隔内完成同步，很大程度上保证了生成的静态文件同步到多个web节点的实时性。
 
 ## 环境依赖
-1. 操作系统 linux内核2.6.9(Inotify要求)
+1. 操作系统 linux内核2.6.13(Inotify要求)
 2. nodejs (目前测试版本为0.10.7)
 3. rsync
 
@@ -19,6 +19,10 @@
 1. `config/index.js`为主配置文件
 2. 详细配置说明请参考：`config/index.js`内容
 
+## 查看系统支持情况
+1. 查看是否支持inotify  `ls /proc/sys/fs/inotify`
+2. 查看操作系统位数（下载nodejs时要和位数对应）  `getconf LONG_BIT`
+
 ## 部署
   部署一定要保证关键文件及文件夹的读写权限
   1. 日志目录（config.logPath）
@@ -29,6 +33,13 @@
 
 crontab里配置  `*/1 * * * * /usr/bin/flock -xn /var/run/watcherRun.lock -c 'node /tonny/nodejs/watcher/run.js > /tonny/log/crontab_run.log 2>&1'`
 
+## shell脚本说明
+1. `confInotify.sh`自动写inotify的配置
+2. `readdir.sh`遍历目录
+3. `stopRun.sh`强制停`run.js`的相关进程
+4. `stopWatcher.sh`强制停`memoryWatcher.js`的相关进程
+5. `tryRestart.sh`目标机上定时检测是不是需要重启，强制停`run.js`和`memoryWatcher.js`的相关进程
+6. `udateSource.sh`把源码同步到指定的部署机上
 
 ## 可能遇到问题
 ### 环境安装
