@@ -1,6 +1,7 @@
 var http = require('http');
 var util = require('./util');
 var url = require('url');
+var fs = require('fs');
 var config = require('./config');
 var _log = util.prefixLogSync(config.logPath,'watcher');
 
