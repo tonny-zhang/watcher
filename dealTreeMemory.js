@@ -33,7 +33,7 @@ function _dealTree(tree){
 			}else{
 				var fromPath = path.normalize(path.join(fromDir,i));
 				util.copyFileSync(fromPath,toPath);
-				_log('copyFile',toPath);
+				_log('copyFile',fromPath);
 			}
 		}
 	}
