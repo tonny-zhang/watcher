@@ -39,7 +39,7 @@ var _runFn = function(){
 				rsyncInfo.forEach(function(v){
 					var _logPath = path.join(logPath,v.logPrefix+'_$(date +%Y-%m-%d).log');
 					var startCommand = "echo $(date '+%Y-%m-%d %H:%M:%S') "+(watcherPath||rsyncPath)+' >> '+_logPath;
-					var command = [rsyncCommand,"'-e ssh -p "+v.port+"'",rsyncPath,v.address,'2>&1','>>',_logPath].join(' ');
+					var command = [rsyncCommand,(v.param||''),"'-e ssh -p "+v.port+"'",rsyncPath,v.address,'2>&1','>>',_logPath].join(' ');
 					var endCommand = "echo $(date '+%Y-%m-%d %H:%M:%S')  end >> "+_logPath;
 					temp.push([startCommand,command,endCommand].join(';'));
 				});
@@ -48,7 +48,7 @@ var _runFn = function(){
 		}
 		//处理同步命令处理
 		watcherInfo.forEach(function(v){
-			var tempPath = path.join(copyToPath,v.tempName)+'/';
+			var tempPath = path.join(copyToPath,v.tempName)+(v.isFile?'':'/');
 			dealCommand(tempPath,v.rsync,v.path);
 		});
 		dealCommand(path.join(copyToPath,config.deletedFileName),config.deleteRsync);

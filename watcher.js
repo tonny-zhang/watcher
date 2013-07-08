@@ -180,7 +180,11 @@ exports.Watcher = (function(){
    
     /*提供统一的遍历目录并初始化接口*/
     Watcher.prototype._readDir = function(dir,isInit,callback){
-        if(!fs.statSync(dir).isDirectory()){
+        try{
+            if(!fs.statSync(dir).isDirectory()){
+                return;
+            }
+        }catch(e){
             return;
         }
         var _this = this;
@@ -245,7 +249,7 @@ exports.Watcher = (function(){
                                            , isNoReadSub /*是否不用遍历子目录，默认为false,即遍历*/
                                             ){
     	var _this = this;
-        watchPath = path.normalize(watchPath);
+        watchPath = path.normalize(path.join(watchPath,'.'));
         if(!isNoUseFilter && !_this.watchFilter.isWatching(watchPath)){//可以保证都是要监控的目录下的子目录，减少匹配的计算量
             return;
         }

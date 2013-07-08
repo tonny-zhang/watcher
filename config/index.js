@@ -6,21 +6,25 @@ var config = {
 	/*更新监控目录可以调用 `node memoryWatcher.js reload` */
 	watcher: [
 		{
-			'path': 'd:/test/html/a/b',
+			'path': 'd:/test/html/a/b.xml',
+			'isFile': true,	//是否是文件
 			'rsync': [{
 					'address': 'sam@61.4.185.111:/zkTest/serverOne/',
-					'port': 2222
+					'port': 2222,
+					'param': "--exclude '2010/' --exclude '2011/' --exclude '2012/'"
 				}, {
-					'address': 'sam@61.4.185.111:/zkTest/serverTwo/'
+					'address': 'sam@61.4.185.111:/zkTest/serverTwo/',
+					'param': "--exclude '2010/' --exclude '2011/' --exclude '2012/'"
 				}
 			]
 		}
 		,
 		{
-			'path': 'd:/test/html/a1/b1',
+			'path': 'd:/test/html/a1/www.weather.com.cn/',
 			'rsync': [{
 					'address': 'sam@61.4.185.111:/zkTest/serverOne/',
-					'port': 2222
+					'port': 2222,
+					'logPrefix': '61.4.185.111'
 				}, {
 					'address': 'sam@61.4.185.111:/zkTest/serverTwo/'
 				}
@@ -71,3 +75,6 @@ config.deleteRsync = [{
 	}
 ];
 module.exports = configUtil.index(config);
+if(process.argv[1] == __filename){
+	configUtil.check(module.exports);
+}
