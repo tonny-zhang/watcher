@@ -30,7 +30,7 @@ function index(config){
 		var isFileObj = {};
 		_watcherConfig.forEach(function(v) {
 			var isEndWithSep = /[\/\\]$/.test(v.path);
-			var _p = path.normalize(path.join(v.path, '.')) + (isEndWithSep?'/':'');//这里方便配置检测时，对isFile进行检测
+			var _p = path.normalize(path.join(v.path, '.')) + (isEndWithSep?path.sep:'');//这里方便配置检测时，对isFile进行检测
 			tempArr[_p] || (tempArr[_p] = []);
 			isFileObj[_p] = v.isFile;//以最后一次为准
 			//处理相同的同步设置
@@ -65,8 +65,35 @@ function index(config){
 		cache[_parentDir] || (cache[_parentDir] = []); //对上一级进行监控，防止指定监控的文件夹不存在
 		cache[_parentDir].push(_p);
 	});
-	// console.log(_watcherConfig,cache);
-	config.watcher = _watcherConfig;
+	var newWatcheConfig = [];
+	//把父级目录靠前
+	_watcherConfig.sort(function(a,b){
+		return a.path.split(path.sep).length > b.path.split(path.sep).length;
+	});
+	//当有父级目录时，把父级目录的同步处理加进来
+	_watcherConfig.forEach(function(conf, i) {
+		var _p = conf.path;
+		for(var i = 0,j=newWatcheConfig.length;i<j;i++){
+			var _parent = newWatcheConfig[i];
+			var tempPath = _parent.path;
+			var _index = _p.indexOf(tempPath);
+			if(_index == 0){
+				var rsync = _parent.rsync.slice();
+				var relativePath = _p.replace(tempPath,'');
+				rsync.forEach(function(v,i){
+					var obj = util.extend({},v);
+					obj.address = path.normalize(obj.address + relativePath).replace(/\\/g,'/');//保证linux下的rsync格式
+					delete obj.param;	//把父级目录的限制参数去掉 '--exclude'
+					obj._p = tempPath;	//添加父级目录标识，方便调试
+					rsync[i] = obj;
+				});
+
+				conf.rsync = conf.rsync.concat(rsync);
+			}
+		}
+		newWatcheConfig.push(conf);
+	});
+	config.watcher = newWatcheConfig;
 	config.watcher.info = cache;
 	return config;
 }
@@ -112,7 +139,7 @@ var check = (function(){
 	var ERROR_NULL = 1;//配置参数值为空
 	var ERROR_NO_WATCHER = 2;//没有配置watcher
 	var ERROR_IS_FILE = 3;//没有配置或'isFile'配置不正确
-	var ERROR_REPEAT_RSYNC = 4;//重复的rsync配置
+	var ERROR_REPEAT_RSYNC = 4;//重复的rsync配置,可能由于父级目录配置造成
 	var ERROR_RSYNC_PREFIX = 5;//IP地址形式的prefix不正确
 	var ERROR_ILLEGAL_RSYNC_ADDRESS = 6;//不合法的同步地址
 

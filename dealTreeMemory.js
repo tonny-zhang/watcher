@@ -37,6 +37,10 @@ function _dealTree(tree){
 			}
 		}
 	}
+	//优先处理子目录
+	config.watcher.sort(function(a,b){
+		return a.path.split(path.sep).length < b.path.split(path.sep).length;
+	});
 	config.watcher.forEach(function(v){
 		var driInfo = tree;
 		var _pathArr = v.path.split(path.sep);
