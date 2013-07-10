@@ -52,9 +52,23 @@ var createHttpServer = require('./createHttpServer');
 				createHttpServer(config.port,tree,watcher);
 			}
 			var watcherCache = config.watcher.info;
+			var cache = [];
 			for(var i in watcherCache){
-				watcher.initAddParentWatch(i,watcherCache[i]);
+				cache.push(i);
 			}
+			//进行排序，让父级尽量靠前
+			cache.sort(function(a,b){
+				return a.split(path.sep).length > b.split(path.sep).length
+			});
+			for(var i = 0,j=cache.length;i<j;i++){
+				var pPath = cache[i];
+				var sub = watcherCache[pPath];
+				sub.sort(function(a,b){
+					return a.split(path.sep).length > b.split(path.sep).length
+				});
+				watcher.initAddParentWatch(pPath,sub);
+			}
+			
 		})();
 	}
 })();

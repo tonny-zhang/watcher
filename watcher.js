@@ -75,7 +75,7 @@ var _innerUtil = (function(){
             var startTime = +new Date();
             var offset = 0;
             var totalNum = 0;
-            var _failNum = 20; //保证读取大文件的完整性
+            var _failNum = 5; //保证读取大文件的完整性
             var _failedNum = 0;
             var _delay = 1000;
             var inptext = '';
@@ -108,6 +108,7 @@ var _innerUtil = (function(){
                             totalNum += inptext.length;
                             callback(inptext);
                         }
+                        afterDeal();//通知处理堆栈处理下一个
                         watcherUtil.command(['wc','-l',file].join(' '),function(error,num){
                             num = num.replace(/\s*(\d+)[\s\S]*/,'$1');
                             _log('readEnd','['+num+']',totalNum,file,+new Date()-startTime+' ms');
@@ -140,6 +141,64 @@ var _innerUtil = (function(){
             _log('readStart',fromSecond,dir,tempFile);
             watcherUtil.command(command);
             return tempFile;
+        }
+
+        var MAX_DEAL_NUM = Math.round(require('os').cpus().length*1) || 1;//同步处理的最大数,用cpu个数的2/3
+        
+        var stackDeal = [];
+        var dealingNum = 0;//
+        util.readdirAndDeal = function(dir,copyToPath,fromSecond,dealCallback){
+            stackDeal.push({dir:dir,copyToPath:copyToPath,fromSecond:fromSecond,dealCallback:dealCallback});
+            if(dealingNum < MAX_DEAL_NUM){
+                dealStack();
+            }
+        }
+        var afterDeal = function(){
+            dealingNum--;
+            if(dealingNum < MAX_DEAL_NUM){
+                dealStack();
+            }
+        }
+        var cacheDealDir = [];
+        //是否有父级目录正在处理或已经处理过
+        var isDealingParent = function(_path){
+            if(_path){
+                for(var i = 0,j=cacheDealDir.length;i<j;i++){
+                    if(_path.indexOf(cacheDealDir[i]) == 0){
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        //启动处理堆栈
+        var dealStack = function(){
+            var dealingStack = stackDeal.splice(0,MAX_DEAL_NUM-dealingNum);
+            dealingNum += dealingStack.length;
+            var dealConf;
+            while((dealConf = dealingStack.shift())){
+                var _dir = dealConf.dir;
+                _dir = path.normalize(path.join(_dir,'.',path.sep));
+                if(isDealingParent(_dir)){//当已经把父级目录遍历过后，子目录不会重复处理
+                    afterDeal();
+                    continue;
+                }
+                cacheDealDir.push(_dir);
+                var tempFile = util.readdir(_dir,dealConf.copyToPath,dealConf.fromSecond);
+                var callback = dealConf.dealCallback;
+                setTimeout(function(){
+                    util.readFromFile(tempFile,function(lines){
+                        if(watcherUtil.isArray(lines)){
+                            lines.forEach(function(line){
+                                if(line){
+                                    line = line.split('|');
+                                    callback(line[0],line.length == 2);
+                                }
+                            });
+                        }
+                    });
+                },5);
+            }
         }
     })();
     return util;
@@ -201,19 +260,20 @@ exports.Watcher = (function(){
                 }
             }
         });
-        var tempFile = _innerUtil.readdir(dir,config.copyToPath,now-createDelay);
-        setTimeout(function(){
-            _innerUtil.readFromFile(tempFile,function(lines){
-                if(watcherUtil.isArray(lines)){
-                    lines.forEach(function(line){
-                        if(line){
-                            line = line.split('|');
-                            callback(line[0],line.length == 2);
-                        }
-                    });
-                }
-            });
-        },5);
+        _innerUtil.readdirAndDeal(dir,config.copyToPath,now-createDelay,callback);
+        // var tempFile = _innerUtil.readdir(dir,config.copyToPath,now-createDelay);
+        // setTimeout(function(){
+        //     _innerUtil.readFromFile(tempFile,function(lines){
+        //         if(watcherUtil.isArray(lines)){
+        //             lines.forEach(function(line){
+        //                 if(line){
+        //                     line = line.split('|');
+        //                     callback(line[0],line.length == 2);
+        //                 }
+        //             });
+        //         }
+        //     });
+        // },5);
     };
     /*初始化计算出的父级目录,不过滤，不遍历子目录*/
     Watcher.prototype.initAddParentWatch = function(watchPath,subPath){
