@@ -43,9 +43,14 @@ function _dealTree(tree){
 	});
 	config.watcher.forEach(function(v){
 		var driInfo = tree;
+		var str = '';
 		var _pathArr = v.path.split(path.sep);
-		for(var i = 1,j=_pathArr.length;i<j;i++){
+		for(var i = 0,j=_pathArr.length;i<j;i++){
+			if(!_pathArr[i]){
+				continue;
+			}
 			var temp = driInfo[_pathArr[i]];
+			str += '["'+_pathArr[i]+'"]';
 			if(temp){
 				driInfo = temp;
 			}else{
@@ -53,6 +58,7 @@ function _dealTree(tree){
 			}
 		}
 		if(i == j){
+			new Function('delete this'+str).call(tree);//子目录处理完后清除数据，减小父级目录的处理，达到减小IO资源浪费
 			_deal(v.path,path.join(copyToPath,v.tempName),driInfo);
 		}
 	});
@@ -79,7 +85,7 @@ function getDataFromMemory(callback){
 	callback || (callback = function(){});
 	util.curl(config.host,config.port,'/',function(err,data){
 		if(err){
-			_log('problem with request: ' + e.message);
+			_log('problem with request: ' + err.message);
 		}else{
 			try{
 				_dealData(JSON.parse(data),callback);

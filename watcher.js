@@ -22,7 +22,6 @@ var fs = require('fs'),
 var watcherUtil = require('./util');
 var Node = require('./node');
 
-var BASE_PATH = /win/.test(require('os').platform())?'':'/';
 var _innerUtil = (function(){
     var util = {};
     //检测是不是监控目录及子目录
@@ -40,7 +39,7 @@ var _innerUtil = (function(){
             }
             var _tempArr = [];
             _path.forEach(function(v,i){ 
-                _tempArr[i] = new RegExp('^'+v+'(/.+?)?$');
+                _tempArr[i] = new RegExp('^'+v.replace(/(\/+|\\+)$/,'')+'(/.+?)?$'); //把最后的分割号去掉
                 _tempArr[i].p = v;
             });
             this.watchingPathReg = this.watchingPathReg.concat(_tempArr);
@@ -67,7 +66,7 @@ var _innerUtil = (function(){
         util.watchFilter = watchFilter;
     })();
     (function(){
-        //读取由shell遍历文件生成的日志文件
+        /*读取由shell遍历文件生成的日志文件*/
         util.readFromFile = function(file,callback){
             var config = require('./config');
             var _log = watcherUtil.prefixLogSync(config.logPath,'init');
@@ -75,14 +74,14 @@ var _innerUtil = (function(){
             var startTime = +new Date();
             var offset = 0;
             var totalNum = 0;
-            var _failNum = 5; //保证读取大文件的完整性
-            var _failedNum = 0;
             var _delay = 1000;
             var inptext = '';
+            var readTT;
             var _read = function(){
+                clearTimeout(readTT);
                 var stat = fs.statSync(file);
                 var fileSize = stat.size;
-                /*shell读取目录信息写日志文件，nodejs读日志文件减小系统IO，每次判断日志文件修改时间保证读取文件完整性*/
+                //shell读取目录信息写日志文件，nodejs读日志文件减小系统IO
                 if(offset != fileSize){
                     _failedNum = 0;//有数据时失败次数重置
                     var readStream = fs.createReadStream(file,{start:offset,end:fileSize});
@@ -99,33 +98,37 @@ var _innerUtil = (function(){
                         },0)
                     });
                     readStream.on('end', function (close) {
-                        setTimeout(_read,_delay);//给充足的时间让系统更新文件时间
+                        readTT = setTimeout(_read,_delay);//给充足的时间让系统更新文件时间
                     });
                 }else{
-                    if(++_failedNum >= _failNum){
-                        if(inptext){//处理上次处理完后的最后一个
-                            inptext = inptext.split('\n');
-                            totalNum += inptext.length;
-                            callback(inptext);
-                        }
-                        afterDeal();//通知处理堆栈处理下一个
-                        watcherUtil.command(['wc','-l',file].join(' '),function(error,num){
-                            num = num.replace(/\s*(\d+)[\s\S]*/,'$1');
-                            _log('readEnd','['+num+']',totalNum,file,+new Date()-startTime+' ms');
-                            watcherUtil.command(['rm -rf',file].join(' '),function(){
-                                _log('rmRead',file);
+                    //查看系统进程比对比缓存文件字节数更可靠，可以读文件的程序挂起（挂载网盘很可能会出现这种情况）
+                    watcherUtil.command('ps aux|grep readdir.sh|grep -v grep|grep '+cacheData[file],function(err,data){                        
+                        if(!err && !data){
+                            delete cacheData[file];
+                            if(inptext){//处理上次处理完后的最后一个
+                                inptext = inptext.split('\n');
+                                totalNum += inptext.length;
+                                callback(inptext);
+                            }
+                            dealStack();//通知处理堆栈处理下一个
+                            watcherUtil.command(['wc','-l',file].join(' '),function(error,num){
+                                num = num.replace(/\s*(\d+)[\s\S]*/,'$1');
+                                _log('readEnd','['+num+']',totalNum,file,+new Date()-startTime+' ms');
+                                watcherUtil.command(['rm -rf',file].join(' '),function(){
+                                    _log('rmRead',file);
+                                });
                             });
-                        });
-                        
-                    }else{
-                        setTimeout(_read,_delay);//给充足的时间让系统更新文件时间
-                    }
+                        }else{
+                            readTT = setTimeout(_read,_delay);//给充足的时间让系统更新文件时间
+                        }
+                    });
                 }
             }
             _read();
         }
-        //遍历目录
-        util.readdir = function(dir,copyToPath,fromSecond){
+        var cacheData = {};
+        /*遍历目录*/
+        util.readdir = function(dir,copyToPath,fromSecond,startFn){
             fromSecond = (fromSecond||'')+'';
             if(fromSecond.length > 10){
                 fromSecond = Math.round((Number(fromSecond) || 0)/1000)+'';
@@ -137,30 +140,24 @@ var _innerUtil = (function(){
             var config = require('./config');
             var _log = watcherUtil.prefixLogSync(config.logPath,'init');
             var tempFile = path.join(copyToPath,watcherUtil.md5(new Date()+dir));
+            cacheData[tempFile] = dir;
             var command = ['nohup',path.join(__dirname,'./shell/readdir.sh'),dir,fromSecond||'','>>',tempFile,'2>&1 &'].join(' ');
             _log('readStart',fromSecond,dir,tempFile);
-            watcherUtil.command(command);
+            watcherUtil.command(command,startFn);
             return tempFile;
         }
 
-        var MAX_DEAL_NUM = Math.round(require('os').cpus().length*1) || 1;//同步处理的最大数,用cpu个数的2/3
+        //同步处理的最大数,用cpu个数的2/3
+        var MAX_DEAL_NUM = Math.round(require('os').cpus().length*1) || 1;
         
-        var stackDeal = [];
-        var dealingNum = 0;//
+        var stackDeal = [];//等待处理的队列
+        /*对外提供统一接口，遍历目录并处理*/
         util.readdirAndDeal = function(dir,copyToPath,fromSecond,dealCallback){
             stackDeal.push({dir:dir,copyToPath:copyToPath,fromSecond:fromSecond,dealCallback:dealCallback});
-            if(dealingNum < MAX_DEAL_NUM){
-                dealStack();
-            }
-        }
-        var afterDeal = function(){
-            dealingNum--;
-            if(dealingNum < MAX_DEAL_NUM){
-                dealStack();
-            }
+            dealStack();
         }
         var cacheDealDir = [];
-        //是否有父级目录正在处理或已经处理过
+        /*是否有父级目录正在处理或已经处理过*/
         var isDealingParent = function(_path){
             if(_path){
                 for(var i = 0,j=cacheDealDir.length;i<j;i++){
@@ -171,34 +168,52 @@ var _innerUtil = (function(){
             }
             return false;
         }
-        //启动处理堆栈
+        var isWaitingCommand = false;//是否在等待系统命令回复（异步的）
+        /*启动处理堆栈*/
         var dealStack = function(){
-            var dealingStack = stackDeal.splice(0,MAX_DEAL_NUM-dealingNum);
-            dealingNum += dealingStack.length;
-            var dealConf;
-            while((dealConf = dealingStack.shift())){
-                var _dir = dealConf.dir;
-                _dir = path.normalize(path.join(_dir,'.',path.sep));
-                if(isDealingParent(_dir)){//当已经把父级目录遍历过后，子目录不会重复处理
-                    afterDeal();
-                    continue;
-                }
-                cacheDealDir.push(_dir);
-                var tempFile = util.readdir(_dir,dealConf.copyToPath,dealConf.fromSecond);
-                var callback = dealConf.dealCallback;
-                setTimeout(function(){
-                    util.readFromFile(tempFile,function(lines){
-                        if(watcherUtil.isArray(lines)){
-                            lines.forEach(function(line){
-                                if(line){
-                                    line = line.split('|');
-                                    callback(line[0],line.length == 2);
-                                }
-                            });
-                        }
-                    });
-                },5);
+            if(isWaitingCommand){
+                return;
             }
+            isWaitingCommand = true;
+            setTimeout(function(){//给充足的时间进入系统进程表
+                watcherUtil.command('ps aux|grep readdir.sh|grep -v grep|wc -l',function(err,data){
+                    isWaitingCommand = false;
+                    if(!err){
+                        var haveNum = Number(data)||0;
+                        if(MAX_DEAL_NUM-haveNum <= 0){
+                            return;
+                        }
+                        var dealingStack = stackDeal.splice(0,MAX_DEAL_NUM-haveNum);
+                        var dealConf;
+                        while((dealConf = dealingStack.shift())){
+                            var _dir = dealConf.dir;
+                            _dir = path.normalize(path.join(_dir,'.',path.sep));
+                            if(isDealingParent(_dir)){//当已经把父级目录遍历过后，子目录不会重复处理
+                                dealStack();
+                                continue;
+                            }
+                            cacheDealDir.push(_dir);
+                            (function(callback){
+                                var tempFile = util.readdir(_dir,dealConf.copyToPath,dealConf.fromSecond,function(){
+                                    setTimeout(function(){
+                                        util.readFromFile(tempFile,function(lines){
+                                            if(watcherUtil.isArray(lines)){
+                                                lines.forEach(function(line){
+                                                    if(line){
+                                                        line = line.split('|');
+                                                        callback && callback(line[0],line.length == 2);
+                                                    }
+                                                });
+                                            }
+                                        });
+                                    },200);
+                                    
+                                });
+                            })(dealConf.dealCallbackfunction);
+                        }
+                    }
+                });
+            },300);
         }
     })();
     return util;
@@ -248,6 +263,7 @@ exports.Watcher = (function(){
         }
         var _this = this;
         callback || (callback = function(_path,isFile){
+            _path = path.normalize(_path);
             if(_this.watchFilter.isWatching(_path)){
                 if(isFile){
                     _this._emit(Watcher.MODIFY,_path,path.basename(_path),Watcher.TYPE_FILE);
@@ -261,19 +277,6 @@ exports.Watcher = (function(){
             }
         });
         _innerUtil.readdirAndDeal(dir,config.copyToPath,now-createDelay,callback);
-        // var tempFile = _innerUtil.readdir(dir,config.copyToPath,now-createDelay);
-        // setTimeout(function(){
-        //     _innerUtil.readFromFile(tempFile,function(lines){
-        //         if(watcherUtil.isArray(lines)){
-        //             lines.forEach(function(line){
-        //                 if(line){
-        //                     line = line.split('|');
-        //                     callback(line[0],line.length == 2);
-        //                 }
-        //             });
-        //         }
-        //     });
-        // },5);
     };
     /*初始化计算出的父级目录,不过滤，不遍历子目录*/
     Watcher.prototype.initAddParentWatch = function(watchPath,subPath){
@@ -356,6 +359,7 @@ exports.Watcher = (function(){
         return this;
     }
     var watchingNum = 0;
+    /*添加watch*/
     var _inotifyAddWatch = function(watcher,_path){
         if(watchPathList[_path] || !fs.existsSync(_path)){
             return;
@@ -381,6 +385,7 @@ exports.Watcher = (function(){
         	_error('add watch fail:'+_path);
         }
     }
+    /*有文件（夹）操作时回调*/
     var _eventCallback = function(watcher,event){        
         var mask = event.mask;
         var watch = event.watch;
@@ -390,7 +395,7 @@ exports.Watcher = (function(){
             if(_test(watcher.ignorePath,fileName)){
                 return;
             }
-            var fullname = path.join(watchPath, fileName);
+            var fullname = path.normalize(path.join(watchPath, fileName));
             //保证非监控，不触发回调（尤其是监控目录的父级目录）
             if(!watcher.watchFilter.isWatching(fullname)){
                 return;

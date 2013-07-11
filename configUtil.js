@@ -83,12 +83,16 @@ function index(config){
 				rsync.forEach(function(v,i){
 					var obj = util.extend({},v);
 					obj.address = path.normalize(obj.address + relativePath).replace(/\\/g,'/');//保证linux下的rsync格式
-					delete obj.param;	//把父级目录的限制参数去掉 '--exclude'
+					obj.param = "";	//把父级目录的限制参数去掉 '--exclude'
 					obj._p = tempPath;	//添加父级目录标识，方便调试
-					rsync[i] = obj;
+					
+					//处理自动生成的重复同步配置 
+					if(!conf.rsync.some(function(ele,i,arr){
+						return ele.address == obj.address;//暂时以同步地址为标准
+					})){
+						conf.rsync.push(obj);
+					}
 				});
-
-				conf.rsync = conf.rsync.concat(rsync);
 			}
 		}
 		newWatcheConfig.push(conf);
