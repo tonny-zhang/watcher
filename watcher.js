@@ -201,7 +201,7 @@ var _innerUtil = (function(){
                                                 lines.forEach(function(line){
                                                     if(line){
                                                         line = line.split('|');
-                                                        callback && callback(line[0],line.length == 2);
+                                                        callback(line[0],line.length == 2);
                                                     }
                                                 });
                                             }
@@ -209,7 +209,7 @@ var _innerUtil = (function(){
                                     },200);
                                     
                                 });
-                            })(dealConf.dealCallbackfunction);
+                            })(dealConf.dealCallback);
                         }
                     }
                 });
