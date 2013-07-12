@@ -77,6 +77,8 @@ var _innerUtil = (function(){
             var _delay = 1000;
             var inptext = '';
             var readTT;
+            var failNum = 5;
+            var failedNum = 0;
             var _read = function(){
                 clearTimeout(readTT);
                 var stat = fs.statSync(file);
@@ -103,7 +105,7 @@ var _innerUtil = (function(){
                 }else{
                     //查看系统进程比对比缓存文件字节数更可靠，可以读文件的程序挂起（挂载网盘很可能会出现这种情况）
                     watcherUtil.command('ps aux|grep readdir.sh|grep -v grep|grep '+cacheData[file],function(err,data){                        
-                        if(!err && !data){
+                        if(!err && !data && ++failedNum >= failNum){//有一个失败次数保证
                             delete cacheData[file];
                             if(inptext){//处理上次处理完后的最后一个
                                 inptext = inptext.split('\n');

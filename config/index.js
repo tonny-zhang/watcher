@@ -18,7 +18,7 @@ var config = {
 		// }
 		// ,
 		{
-			'path': 'd:/test/html/',
+			'path': '/opt/deploy/apache-tomcat-6.0.35/webapps/web/indexfc/',
 			'rsync': [{
 					'address': 'sam@61.4.185.111:/zkTest/html/',
 					'port': 2222,
@@ -42,27 +42,27 @@ var config = {
 		// 	]
 		// }
 		// ,
-		{
-			'path': 'd:/test/html/b1/',
-			'rsync': [{
-					'address': 'sam@61.4.185.111:/zkTest/html/b1/',//同步的目标地址
-					'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
-					'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
-				}, {
-					'address': 'sam@61.4.185.112:/zkTest/html/b1/'
-				}
-			]
-		}
-		,
-		{
-			'path': 'd:/test/html/b1/1/',
-			'rsync': [{
-					'address': 'sam@61.4.185.111:/zkTest/html/b1/1/',//同步的目标地址
-					'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
-					'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
-				}
-			]
-		}
+		// {
+		// 	'path': 'd:/test/html/b1/',
+		// 	'rsync': [{
+		// 			'address': 'sam@61.4.185.111:/zkTest/html/b1/',//同步的目标地址
+		// 			'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
+		// 			'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
+		// 		}, {
+		// 			'address': 'sam@61.4.185.112:/zkTest/html/b1/'
+		// 		}
+		// 	]
+		// }
+		// ,
+		// {
+		// 	'path': 'd:/test/html/b1/1/',
+		// 	'rsync': [{
+		// 			'address': 'sam@61.4.185.111:/zkTest/html/b1/1/',//同步的目标地址
+		// 			'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
+		// 			'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
+		// 		}
+		// 	]
+		// }
 	],
 	port: 3333, //文件夹树访问端口
 	host: '127.0.0.1', //文件夹树访问host

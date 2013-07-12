@@ -145,7 +145,7 @@ var _runFn = function(){
 
 ;(function(){
 	if(config.rsync.user){
-		util.command('if [ ! -d '+logPath+' ];then mkdir '+logPath+';fi;chown '+config.rsync.user+'.'+config.rsync.user+' '+logPath,_runFn);
+		util.command('if [ ! -d '+logPath+' ];then mkdir '+logPath+';fi;chown '+(config.rsync.group||config.rsync.user)+'.'+config.rsync.user+' '+logPath,_runFn);
 	}else{
 		util.mkdirSync(logPath);//创建日志文件夹目录
 		_runFn();

@@ -23,17 +23,15 @@ function _dealTree(tree){
 	function _deal(fromDir,toDir,treeNode){
 		for(var i in treeNode){
 			var toPath = path.normalize(path.join(toDir,i));
+			var fromPath = path.normalize(path.join(fromDir,i));
 			var subTreeNode = treeNode[i];
-			if(subTreeNode){
-				util.mkdirSync(toPath);
-				_log('mkdir',toPath);
-				for(var j in subTreeNode){
-					_deal(path.join(fromDir,i),path.join(toDir,i),subTreeNode);
-				}
-			}else{
-				var fromPath = path.normalize(path.join(fromDir,i));
+			if(subTreeNode == 0){
 				util.copyFileSync(fromPath,toPath);
 				_log('copyFile',fromPath);
+			}else{
+				util.mkdirSync(toPath);
+				_log('mkdir',toPath);
+				_deal(fromPath,toPath,subTreeNode);
 			}
 		}
 	}
@@ -76,7 +74,6 @@ function _dealDeleteTree(deleteTree){
 	fs.appendFileSync(deleteDetailFileName,config.deletedSep+deleteTree.join(config.deletedSep));
 	_log('deletedDetail',deleteDetailFileName);
 }
-// _dealData({"base":"d:/","tree":{"test":{"html":{"1":0,"a":{"b":{}}}}},"deleteTree":["aa/bb/c","aa/c/1.txt"]});
 
 /*通过http得到内存中目录结构及要删除的信息
   ！！但这个方法不能保证同步
@@ -88,11 +85,12 @@ function getDataFromMemory(callback){
 			_log('problem with request: ' + err.message);
 		}else{
 			try{
-				_dealData(JSON.parse(data),callback);
+				data = JSON.parse(data);
 			}catch(e){
 				_log('error getDataFromMemory data wrong!'+e.message);
 				callback(e);
 			}
+			_dealData(data,callback);
 		}
 	});
 }
@@ -136,3 +134,4 @@ function getDataFromJsonFile(filePath){
 // })()
 
 exports.getDataFromMemory = getDataFromMemory;
+exports._dealData = _dealData;
