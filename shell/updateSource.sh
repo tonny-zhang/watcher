@@ -20,4 +20,12 @@ echo 'end 61.4.185.111'>>$logName
 echo 'start 61.4.184.32'>>$logName
 rsync --exclude 'config' -WPvaz '-e ssh -p 2222' $SOURCE_PATH/ sam@61.4.184.32:/home/sam/nodejs/watcher/ >> $logName 2>&1
 echo 'end 61.4.184.32'>>$logName
+
+echo 'start 61.4.184.33'>>$logName
+rsync --exclude 'config' -WPvaz '-e ssh -p 2222' $SOURCE_PATH/ sam@61.4.184.33:/home/sam/nodejs/watcher/ >> $logName 2>&1
+echo 'end 61.4.184.33'>>$logName
+
+echo 'start 61.4.185.220'>>$logName
+rsync --exclude 'config' -WPvaz '-e ssh -p 2222' $SOURCE_PATH/ sam@61.4.185.220:/home/sam/nodejs/watcher/ >> $logName 2>&1
+echo 'end 61.4.185.220'>>$logName
 EOF
