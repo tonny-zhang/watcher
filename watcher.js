@@ -388,54 +388,70 @@ exports.Watcher = (function(){
         }
     }
     /*有文件（夹）操作时回调*/
-    var _eventCallback = function(watcher,event){        
-        var mask = event.mask;
-        var watch = event.watch;
-        var watchPath = watchPathList[watch];      
-        var fileName = event.name;
-        if(fileName){
-            if(_test(watcher.ignorePath,fileName)){
-                return;
+    var _eventCallback = (function(){
+        var modifyCache = {};
+        /*当操作的文件存在时，重写内容时，会触发两次修改操作，从而写两次操作日志,详细参考：fs.operate.js操作文件后日志*/
+        var _modify = function(_path){
+            if(!modifyCache[_path]){
+                modifyCache[_path] = true;
+                setTimeout(function(){
+                    delete modifyCache[_path];
+                },50);
+                return true;
             }
-            var fullname = path.normalize(path.join(watchPath, fileName));
-            //保证非监控，不触发回调（尤其是监控目录的父级目录）
-            if(!watcher.watchFilter.isWatching(fullname)){
-                return;
-            }
+            return false;
         }
-        var type;
-        /*新建文件时，先触发创建再触发修改*/
-        if(mask & Inotify.IN_MODIFY){
-            type = Watcher.MODIFY;
-        }else if(mask & Inotify.IN_CREATE){
-            if (mask & Inotify.IN_ISDIR){
-                if(watcher.options.isRecursive){
-                    watcher.addWatch(fullname);//文件夹创建放到addWatch里
-                    
-                    type = Watcher.CREATE_DIR;
+        return function(watcher,event){        
+            var mask = event.mask;
+            var watch = event.watch;
+            var watchPath = watchPathList[watch];      
+            var fileName = event.name;
+            if(fileName){
+                if(_test(watcher.ignorePath,fileName)){
+                    return;
                 }
-            }else{
-                type = Watcher.CREATE_FILE;
+                var fullname = path.normalize(path.join(watchPath, fileName));
+                //保证非监控，不触发回调（尤其是监控目录的父级目录）
+                if(!watcher.watchFilter.isWatching(fullname)){
+                    return;
+                }
             }
-        }else if(mask & Inotify.IN_DELETE){
-            type = Watcher.DELETE;
-            if (mask & Inotify.IN_ISDIR){
-                var _watch = watchPathList[fullname];
-                delete watchPathList[_watch];
-                delete watchPathList[fullname];
+            var type;
+            /*新建文件时，先触发创建再触发修改*/
+            if(mask & Inotify.IN_MODIFY){
+                if(_modify(fileName)){
+                    type = Watcher.MODIFY;
+                }
+            }else if(mask & Inotify.IN_CREATE){
+                if (mask & Inotify.IN_ISDIR){
+                    if(watcher.options.isRecursive){
+                        watcher.addWatch(fullname);//文件夹创建放到addWatch里
+                        
+                        type = Watcher.CREATE_DIR;
+                    }
+                }else{
+                    type = Watcher.CREATE_FILE;
+                }
+            }else if(mask & Inotify.IN_DELETE){
+                type = Watcher.DELETE;
+                if (mask & Inotify.IN_ISDIR){
+                    var _watch = watchPathList[fullname];
+                    delete watchPathList[_watch];
+                    delete watchPathList[fullname];
+                }
+            }else if(mask & Inotify.IN_DELETE_SELF){
+                var _path = watchPathList[watch];
+                delete watchPathList[watch];
+                delete watchPathList[_path];
+                fullname = _path;//删除时记录下删除的全路径
+            }else if(mask & Inotify.IN_IGNORED){
+                _log('rmWatcher',fullname||watchPath);
             }
-        }else if(mask & Inotify.IN_DELETE_SELF){
-            var _path = watchPathList[watch];
-            delete watchPathList[watch];
-            delete watchPathList[_path];
-            fullname = _path;//删除时记录下删除的全路径
-        }else if(mask & Inotify.IN_IGNORED){
-            _log('rmWatcher',fullname||watchPath);
+            if(type){
+                watcher._emit(type,fullname,fileName,mask & Inotify.IN_ISDIR?Watcher.TYPE_DIR:Watcher.TYPE_FILE);
+            }
         }
-        if(type){
-        	watcher._emit(type,fullname,fileName,mask & Inotify.IN_ISDIR?Watcher.TYPE_DIR:Watcher.TYPE_FILE);
-        }
-    }
+    })();
     /*初始化参数*/
     Watcher.init = function(){
         config = require('./config');

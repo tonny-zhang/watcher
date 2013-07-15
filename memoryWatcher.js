@@ -23,6 +23,7 @@ var createHttpServer = require('./createHttpServer');
 			});
 			return;
 		}
+		_logWatcher('start');
 		(function(){
 			var copyToPath = path.normalize(config.copyToPath);
 			watcherUtil.mkdirSync(copyToPath);
