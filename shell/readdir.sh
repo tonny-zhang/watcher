@@ -9,10 +9,13 @@ function ergodic(){
         for file in ` ls $1 `
         do
                 _tempFile=$1"/"$file
-                if [ -d $_tempFile ]
-                then
-        		echo $_tempFile
-                        ergodic $_tempFile
+                if [ -d $_tempFile ];then
+                        if [ -L $_tempFile ];then
+                                echo $_tempFile"|"`ls -l $_tempFile|awk -F "->" '{print $2}'`
+                        else
+                		echo $_tempFile
+                                ergodic $_tempFile
+                        fi
                 else
                         if [ $BEGIN_SECOND ];then
                                 if [ `stat -c %Y $_tempFile` -gt $BEGIN_SECOND ];then
@@ -24,6 +27,5 @@ function ergodic(){
                 fi
         done
 }
-echo ''
 ergodic $INIT_PATH
 #echo $(date '+%Y-%m-%d %H:%M:%S')" end"

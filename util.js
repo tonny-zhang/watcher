@@ -35,6 +35,12 @@ function md5(str){
 }
 exports.md5 = md5;
 
+exports.trim = function(str){
+	if(typeof str !== 'string'){
+		return str;
+	}
+	return str.replace(/^\s+|\s+$/,'');
+}
 /*同步拷贝文件*/
 exports.copyFileSync = function(fromPath,toPath){
 	if(fs.existsSync(toPath)){
@@ -231,7 +237,6 @@ exports.extend = function(a,b,c,d){
 })();
 	
 exports.sysError = function(logPath){
-	return;
 	var errorLog = exports.prefixLogSync(logPath,'err');
 	process.on('uncaughtException',function(e){
 		errorLog('sysErr',e);

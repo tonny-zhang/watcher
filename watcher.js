@@ -21,6 +21,7 @@ var fs = require('fs'),
     EventEmitter = require("events").EventEmitter;
 var watcherUtil = require('./util');
 var Node = require('./node');
+var watchPathList = {};//监控队列
 
 var _innerUtil = (function(){
     var util = {};
@@ -64,6 +65,14 @@ var _innerUtil = (function(){
             return false;
         }
         util.watchFilter = watchFilter;
+    })();
+
+    (function(){
+        /*判断是在监控列表里*/
+        util.isWatching = function(_path){
+            // console.log(_path);
+            return watchPathList[path.normalize(_path)] || watchPathList[path.normalize(path.join(_path,'.',path.sep))];
+        }
     })();
     (function(){
         /*读取由shell遍历文件生成的日志文件*/
@@ -135,6 +144,9 @@ var _innerUtil = (function(){
         var cacheData = {};
         /*遍历目录*/
         util.readdir = function(dir,copyToPath,fromSecond,startFn){
+            if(util.isWatching(dir)){
+                return;
+            }
             fromSecond = (fromSecond||'')+'';
             if(fromSecond.length > 10){
                 fromSecond = Math.round((Number(fromSecond) || 0)/1000)+'';
@@ -159,6 +171,9 @@ var _innerUtil = (function(){
         var stackDeal = [];//等待处理的队列
         /*对外提供统一接口，遍历目录并处理*/
         util.readdirAndDeal = function(dir,copyToPath,fromSecond,dealCallback){
+            if(util.isWatching(dir)){
+                return;
+            }
             stackDeal.push({dir:dir,copyToPath:copyToPath,fromSecond:fromSecond,dealCallback:dealCallback});
             dealStack();
         }
@@ -205,22 +220,33 @@ var _innerUtil = (function(){
                             }
                             dealingNum++;
                             cacheDealDir.push(_dir);
-                            (function(callback){
-                                var tempFile = util.readdir(_dir,dealConf.copyToPath,dealConf.fromSecond,function(){
+                            (function(conf){
+                                var tempFile = util.readdir(_dir,conf.copyToPath,conf.fromSecond,function(){
                                     setTimeout(function(){
                                         util.readFromFile(tempFile,function(lines){
                                             if(watcherUtil.isArray(lines)){
                                                 lines.forEach(function(line){
                                                     if(line){
                                                         line = line.split('|');
-                                                        callback(line[0],line.length == 2);
+                                                        var isFileOrLink = line.length == 2;
+                                                        if(isFileOrLink){
+                                                            if(line[0]){
+                                                                //得到软链接的真实地址
+                                                                var _p = path.resolve(path.join(watcherUtil.trim(line[0]),'../'),watcherUtil.trim(line[1]));
+
+                                                                if(_p){
+                                                                    return util.readdirAndDeal(_p,conf.copyToPath,conf.fromSecond,conf.dealCallback);
+                                                                }
+                                                            }
+                                                        }
+                                                        conf.dealCallback(line[0],isFileOrLink);
                                                     }
                                                 });
                                             }
                                         });
                                     },500);//nohup调用子进程间隔时间
                                 });
-                            })(dealConf.dealCallback);
+                            })(dealConf);
                         }
                     }
                 });
@@ -248,7 +274,6 @@ exports.Watcher = (function(){
     var _watcherCache = [];
 
 	var inotify = new Inotify();
-    var watchPathList = {};
     var defaultOptions = {isRecursive:true}
     var watcherTree = new Node('/');
 
