@@ -8,4 +8,5 @@ rm -rf /var/run/watcher.lock
 ps aux|grep readdir.sh|grep -v grep|awk '{print $2}'|xargs kill -9 > /dev/null 2>&1
 
 #remove files created by readdir.sh
-find /tmp/watcher/ -type f -exec rm -rf {} \;
+TEMP_PATH=d:/test/temp;
+find $TEMP_PATH -type f -exec rm -rf {} \;

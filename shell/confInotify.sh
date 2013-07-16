@@ -14,5 +14,6 @@ fi
 
 if [ $IS_KILL_WATCHER ];then
 	`dirname $0`/stopWatcher.sh
-	echo 'kill watcher,config inotify' >> /var/www/logs/watcher/conf_inotify_$(date +%Y-%m-%d).log
+	LOG_PATH=d:/test/log;
+	echo 'kill watcher,config inotify' >> $LOG_PATH/conf_inotify_$(date +%Y-%m-%d).log
 fi
