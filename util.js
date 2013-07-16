@@ -201,28 +201,28 @@ exports.extend = function(a,b,c,d){
 	var exec = require('child_process').exec;
 	exports.command = function(command,callback){
 		callback || (callback = function(){});
-		// var runCommand = exec(command,function(error, stdout, stderr){
-		// 	if(error || stderr){
-		// 		callback(error||stderr);
-		// 	}else{
-		// 		callback(null,stdout);
-		// 	}
+		var runCommand = exec(command,function(error, stdout, stderr){
+			if(error || stderr){
+				callback(error||stderr);
+			}else{
+				callback(null,stdout&&stdout.replace(/^\s*|\s*$/g,''));
+			}
+		});
+		// var runCommand = exec(command);
+		// var result = '';
+		// var errMsg = '';
+		// runCommand.stdout.on('data', function (data) {
+		// 	result += data.toString();
+		// 	// console.log('输出：'+data);
 		// });
-		var runCommand = exec(command);
-		var result = '';
-		var errMsg = '';
-		runCommand.stdout.on('data', function (data) {
-			result += data.toString();
-			// console.log('输出：'+data);
-		});
-		// 捕获标准错误输出并将其打印到控制台
-		runCommand.stderr.on('data', function (data) {
-			errMsg += data;
-			// console.log('错误输出：'+data);
-		});
-		runCommand.on('exit', function (code) {
-			callback(errMsg,result);
-		});
+		// // 捕获标准错误输出并将其打印到控制台
+		// runCommand.stderr.on('data', function (data) {
+		// 	errMsg += data;
+		// 	// console.log('错误输出：'+data);
+		// });
+		// runCommand.on('exit', function (code) {
+		// 	callback(errMsg,result);
+		// });
 	}
 	exports.command.su = function(user,command,callback){
 		command = ['su - '+user+' << EOF',command,'EOF'].join('\n');

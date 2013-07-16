@@ -85,7 +85,7 @@ var _innerUtil = (function(){
                 var fileSize = stat.size;
                 //shell读取目录信息写日志文件，nodejs读日志文件减小系统IO
                 if(offset != fileSize){
-                    _failedNum = 0;//有数据时失败次数重置
+                    failedNum = 0;//有数据时失败次数重置
                     var readStream = fs.createReadStream(file,{start:offset,end:fileSize});
                     readStream.setEncoding('utf8');
                     var dataInfo = [];
@@ -104,16 +104,20 @@ var _innerUtil = (function(){
                     });
                 }else{
                     //查看系统进程比对比缓存文件字节数更可靠，可以读文件的程序挂起（挂载网盘很可能会出现这种情况）
-                    watcherUtil.command('ps aux|grep readdir.sh|grep -v grep|grep '+cacheData[file],function(err,data){                        
-                        if(!err && !data && ++failedNum >= failNum){//有一个失败次数保证
+                    watcherUtil.command('ps aux|grep readdir.sh|grep -v grep|grep '+cacheData[file]+'|wc -l',function(err,data){
+                        if(!err && data == '0' && ++failedNum > failNum){//有一个失败次数保证
                             delete cacheData[file];
                             if(inptext){//处理上次处理完后的最后一个
                                 inptext = inptext.split('\n');
                                 totalNum += inptext.length;
                                 callback(inptext);
                             }
+                            dealingNum--;
+                            if(dealingNum < 0){
+                                dealingNum = 0;
+                            }
                             dealStack();//通知处理堆栈处理下一个
-                            watcherUtil.command(['wc','-l',file].join(' '),function(error,num){
+                            watcherUtil.command(['wc','-l',file,"|awk '{print $1}'"].join(' '),function(error,num){
                                 num = num.replace(/\s*(\d+)[\s\S]*/,'$1');
                                 _log('readEnd','['+num+']',totalNum,file,+new Date()-startTime+' ms');
                                 watcherUtil.command(['rm -rf',file].join(' '),function(){
@@ -171,6 +175,7 @@ var _innerUtil = (function(){
             return false;
         }
         var isWaitingCommand = false;//是否在等待系统命令回复（异步的）
+        var dealingNum = 0;
         /*启动处理堆栈*/
         var dealStack = function(){
             if(isWaitingCommand){
@@ -181,10 +186,14 @@ var _innerUtil = (function(){
                 watcherUtil.command('ps aux|grep readdir.sh|grep -v grep|wc -l',function(err,data){
                     isWaitingCommand = false;
                     if(!err){
-                        var haveNum = Number(data)||0;
+                        if(isNaN(data)){
+                            dealStack();
+                        }
+                        var haveNum = Number(data)||dealingNum;
                         if(MAX_DEAL_NUM-haveNum <= 0){
                             return;
                         }
+                        dealingNum = haveNum;
                         var dealingStack = stackDeal.splice(0,MAX_DEAL_NUM-haveNum);
                         var dealConf;
                         while((dealConf = dealingStack.shift())){
@@ -194,6 +203,7 @@ var _innerUtil = (function(){
                                 dealStack();
                                 continue;
                             }
+                            dealingNum++;
                             cacheDealDir.push(_dir);
                             (function(callback){
                                 var tempFile = util.readdir(_dir,dealConf.copyToPath,dealConf.fromSecond,function(){
@@ -208,14 +218,13 @@ var _innerUtil = (function(){
                                                 });
                                             }
                                         });
-                                    },200);
-                                    
+                                    },500);//nohup调用子进程间隔时间
                                 });
                             })(dealConf.dealCallback);
                         }
                     }
                 });
-            },300);
+            },500);
         }
     })();
     return util;

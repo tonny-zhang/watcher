@@ -8,4 +8,4 @@ rm -rf /var/run/watcher.lock
 ps aux|grep readdir.sh|grep -v grep|awk '{print $2}'|xargs kill -9 > /dev/null 2>&1
 
 #remove files created by readdir.sh
-find /tonny/temp/ -type f -exec rm -rf {} \;
+find /tmp/watcher/ -type f -exec rm -rf {} \;

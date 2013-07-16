@@ -14,5 +14,5 @@ fi
 
 if [ $IS_KILL_WATCHER ];then
 	`dirname $0`/stopWatcher.sh
-	echo 'kill watcher,config inotify' >> /tonny/log/conf_inotify_$(date +%Y-%m-%d).log
+	echo 'kill watcher,config inotify' >> /var/www/logs/watcher/conf_inotify_$(date +%Y-%m-%d).log
 fi
