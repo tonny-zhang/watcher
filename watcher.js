@@ -230,7 +230,7 @@ var _innerUtil = (function(){
                                                         line = line.split('|');
                                                         var isFileOrLink = line.length == 2;
                                                         if(isFileOrLink){
-                                                            if(line[0]){
+                                                            if(line[1]){
                                                                 //得到软链接的真实地址
                                                                 var _p = path.resolve(path.join(watcherUtil.trim(line[0]),'../'),watcherUtil.trim(line[1]));
 
