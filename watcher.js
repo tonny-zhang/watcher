@@ -452,7 +452,8 @@ exports.Watcher = (function(){
             }
             var type;
             /*新建文件时，先触发创建再触发修改*/
-            if(mask & Inotify.IN_MODIFY){
+            //rsync把传上来的文件放入临时文件里，然后再重命名
+            if(mask & Inotify.IN_MODIFY || mask & Inotify.IN_MOVED_TO){
                 if(_modify(fileName)){
                     type = Watcher.MODIFY;
                 }
