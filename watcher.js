@@ -70,8 +70,25 @@ var _innerUtil = (function(){
     (function(){
         /*判断是在监控列表里*/
         util.isWatching = function(_path){
+            if(!_path){
+                return false;
+            }
             // console.log(_path);
             return watchPathList[path.normalize(_path)] || watchPathList[path.normalize(path.join(_path,'.',path.sep))];
+        }
+        /*得到软链接的真实地址*/
+        util.getRealPathOfLink = function(srcPath,targetPath){
+            return path.resolve(path.join(watcherUtil.trim(srcPath),'../'),watcherUtil.trim(targetPath));
+        }
+        util.getTargetpathOfLink = function(linkPath,callback){
+            watcherUtil.command("ls -l "+linkPath+"|awk -F '->' '{print $2}'",function(err,data){
+                callback || (callback = function(){});
+                if(err){
+                    callback(err);
+                }else{
+                    callback(null,util.getRealPathOfLink(linkPath,data));
+                }
+            });
         }
     })();
     (function(){
@@ -232,7 +249,7 @@ var _innerUtil = (function(){
                                                         if(isFileOrLink){
                                                             if(line[1]){
                                                                 //得到软链接的真实地址
-                                                                var _p = path.resolve(path.join(watcherUtil.trim(line[0]),'../'),watcherUtil.trim(line[1]));
+                                                                var _p = util.getRealPathOfLink(line[0],line[1]);
 
                                                                 if(_p){
                                                                     return util.readdirAndDeal(_p,conf.copyToPath,conf.fromSecond,conf.dealCallback);
@@ -265,6 +282,7 @@ exports.Watcher = (function(){
 	var _log;
     var _print;//watcherUtil.print;
 	var _error;
+    var _debug;
     var _test = function(regExp,text){
         if(!util.isRegExp(regExp)){
             return false;
@@ -350,6 +368,7 @@ exports.Watcher = (function(){
     	var _this = this;
         watchPath = path.normalize(path.join(watchPath,'.'));
         if(!isNoUseFilter && !_this.watchFilter.isWatching(watchPath)){//可以保证都是要监控的目录下的子目录，减少匹配的计算量
+            _debug('noWatchingDir',watchPath);
             return;
         }
         _inotifyAddWatch(_this,watchPath);
@@ -442,11 +461,13 @@ exports.Watcher = (function(){
             var fileName = event.name;
             if(fileName){
                 if(_test(watcher.ignorePath,fileName)){
+                    _debug('ignore',watchPath,fileName);
                     return;
                 }
                 var fullname = path.normalize(path.join(watchPath, fileName));
                 //保证非监控，不触发回调（尤其是监控目录的父级目录）
                 if(!watcher.watchFilter.isWatching(fullname)){
+                    _debug('noWatching',fullname);
                     return;
                 }
             }
@@ -465,6 +486,22 @@ exports.Watcher = (function(){
                         type = Watcher.CREATE_DIR;
                     }
                 }else{
+                    if(fs.statSync(fullname).isSymbolicLink()){                        
+                        return util.getTargetpathOfLink(fullname,function(err,targetPath){
+                            if(err){
+                                return _error('getLink',fullname,err);
+                            }
+                            _log('createLink',fullname,targetPath);
+                            var stat = fs.statSync(targetPath);
+                            if(stat.isDirectory()){
+                                watcher.addWatch(targetPath);
+                            }else if(stat.isFile()){
+                                watcher._emit(Watcher.CREATE_FILE,fullname,fileName,Watcher.TYPE_FILE);
+                            }else{//暂时不考虑软链接再是软链接
+                                _log('createOtherFile',fullname,targetPath);
+                            }
+                        })
+                    }
                     type = Watcher.CREATE_FILE;
                 }
             }else if(mask & Inotify.IN_DELETE){
@@ -481,6 +518,8 @@ exports.Watcher = (function(){
                 fullname = _path;//删除时记录下删除的全路径
             }else if(mask & Inotify.IN_IGNORED){
                 _log('rmWatcher',fullname||watchPath);
+            }else{
+                _debug([JSON.stringify(event),watchPath,fullname].join('_'));
             }
             if(type){
                 watcher._emit(type,fullname,fileName,mask & Inotify.IN_ISDIR?Watcher.TYPE_DIR:Watcher.TYPE_FILE);
@@ -496,6 +535,7 @@ exports.Watcher = (function(){
         _log = watcherUtil.prefixLogSync(_logPath,'watcher');
         _print = _log;//watcherUtil.print;
         _error = watcherUtil.errorSync(_logPath);
+        _debug = config.debug?watcherUtil.prefixLogSync(_logPath,'debug'):function(){};
     }
     Watcher.init();//初始化参数
 

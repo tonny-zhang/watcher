@@ -48,7 +48,7 @@ var _runFn = function(){
 		}
 		//处理同步命令处理
 		watcherInfo.forEach(function(v){
-			var tempPath = path.join(copyToPath,v.tempName)+(v.isFile?'':'/');
+			var tempPath = path.join(copyToPath,v.tempName)+'/';
 			dealCommand(tempPath,v.rsync,v.path);
 		});
 		dealCommand(path.join(copyToPath,config.deletedFileName),config.deleteRsync);

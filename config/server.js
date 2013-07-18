@@ -3,7 +3,5 @@ module.exports = {
 	serverPath: 'D:\\test\\server',
 	watchDelay: 3,
 	prefixLogname: 'delete',
-	deleteMap: {
-		'd:\\tonny\\test/1': 'd:\\tonny\\serverOne\\1'
-	}
+	prefixErrorLogname: 'deleteErr'
 }

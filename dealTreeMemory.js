@@ -52,26 +52,40 @@ function _dealTree(tree){
 			if(temp){
 				driInfo = temp;
 			}else{
+				if(temp == 0){
+					var isWatchingFile = true;//当监控为文件时直接进行处理
+				}
 				break;
 			}
 		}
-		if(i == j){
+		if(i == j || isWatchingFile){
+			var toPath = path.join(copyToPath,v.tempName);
+			if(isWatchingFile && v.isFile){
+				var filePath = v.path;
+				util.copyFileSync(filePath,path.join(toPath,path.basename(filePath)));
+				_log('copyFile',filePath);
+			}else{
+				_deal(v.path,toPath,driInfo);
+			}
 			new Function('delete this'+str).call(tree);//子目录处理完后清除数据，减小父级目录的处理，达到减小IO资源浪费
-			_deal(v.path,path.join(copyToPath,v.tempName),driInfo);
 		}
 	});
 	
 }
 
 //处理要删除的信息
-function _dealDeleteTree(deleteTree){
+function _dealDeleteTree(deleteTree,base){
 	if(!deleteTree || !deleteTree.length){
 		return;
 	}
+	base = base || '/';
 	var deleteTreePath = copyToPath;
 	util.mkdirSync(deleteTreePath);
+	deleteTree.forEach(function(v,i){
+		deleteTree[i] = base+v;
+	});
 	var deleteDetailFileName = path.join(deleteTreePath,config.deletedFileName);
-	fs.appendFileSync(deleteDetailFileName,config.deletedSep+deleteTree.join(config.deletedSep));
+	fs.appendFileSync(deleteDetailFileName,JSON.stringify({ip:config.ip||'',p:deleteTree}));
 	_log('deletedDetail',deleteDetailFileName);
 }
 

@@ -117,7 +117,6 @@ var check = (function(){
 		logPath: '',
 		create_delay: 0,//允许的创建文件的延时时间,初始化监控时用
 		deletedFileName: '', //删除信息存放路径，在缓存文件队列路径下
-		deletedSep: '', //
 		flock: { //监控文件锁定执行
 			bin: '',
 			lockFile: ''
@@ -134,6 +133,7 @@ var check = (function(){
 		dealLogPrefix: '',//处理内存数据日志前缀
 		runLogPrefix: '',//run.js运行日志前缀
 		rsyncErrLogPrefix: ''//同步时错误日志
+		,ip: ''
 	};
 	var defaultSync = {
 		'address': '',
@@ -146,6 +146,7 @@ var check = (function(){
 	var ERROR_REPEAT_RSYNC = 4;//重复的rsync配置,可能由于父级目录配置造成
 	var ERROR_RSYNC_PREFIX = 5;//IP地址形式的prefix不正确
 	var ERROR_ILLEGAL_RSYNC_ADDRESS = 6;//不合法的同步地址
+	var ERROR_IP = 7;//IP不是本机IP
 
 	return function _check(config){
 		var errorInfo = [];
@@ -204,6 +205,10 @@ var check = (function(){
 				}
 			});
 		}
+		var ips = util.getIp();
+		if(ips.indexOf(config.ip) == -1){
+			errorInfo.push(ERROR_IP+'\t'+config.ip+'\t should be one of '+ips);
+		}
 		if(!errorInfo.length){
 			console.log('+++++++++++++++++');
 		}else{
@@ -213,5 +218,25 @@ var check = (function(){
 	}
 })();
 
+var server = function(config){
+	var ips = util.getIp();
+	var watcher = config.watcher;
+	watcher.forEach(function(item){
+		var _map = [];
+		var _path = item.path;
+		item.rsync.forEach(function(rsync){
+			ips.forEach(function(ip){
+				if(rsync.address.indexOf(ip)){
+					var _target = rsync.address.replace(/^.+@\d+(\.\d+){3}:/,'');
+					if(_map.indexOf(_target) == -1){
+						_map.push(_target);
+					}
+				}
+			});
+		});
+		item.map = _map;
+	});
+}
 exports.index = index;
 exports.check = check;
+exports.server = server;

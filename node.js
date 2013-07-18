@@ -18,10 +18,16 @@ var Node = function(basePath){
 }
 util.inherits(Node,EventEmitter);
 Node.prototype._getRelativePath = function(p){
+	if(!p){
+		return p;
+	}
 	return path.normalize(p).replace(this._basePathExp,'');
 }
 /*添加路径，可为相对basePath的相对路径*/
 Node.prototype.addPath = function(p,isFile){
+	if(!p){
+		return;
+	}
 	p = this._getRelativePath(p);
 	var pathArr = p.split(path.sep);
 	var fileName = isFile && pathArr.pop();
@@ -35,11 +41,18 @@ Node.prototype.addPath = function(p,isFile){
 	if(fileName){
 		currentNode[fileName] = 0;
 	}
+	var deleIndex = this.deletedPaths.indexOf(p);
+	if(deleIndex > -1){
+		this.deletedPaths.splice(deleIndex,1);//防止刚删除完就添加了
+	}
 	this.emit('addPath',p);
 	return this;
 }
 /*删除路径*/
 Node.prototype.deletePath = function(p){
+	if(!p){
+		return;
+	}
 	var _this = this;
 	p = this._getRelativePath(p);
 	var pathArr = p.split(path.sep);

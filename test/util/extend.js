@@ -9,3 +9,5 @@ test(true,{name:1},extend({},{name:1}));
 test(true,{name:2},extend({},{name:1},{name:2}));
 test(true,{name:2,age:10},extend({},{name:1},{name:2,age:10}));
 test(true,{name:2,age:10,friends:{name:10,age:1}},extend({},{name:1,friends:{name:10,age:1}},{name:2,age:10}));
+
+test(true,{frient:[12,22]},extend({frient:[1,2]},{frient:[12,22]}));

@@ -6,15 +6,16 @@ require('../configUtil.js');
 var config = {
 	fromFile: [
 	'e:/source/server_config/61.4.185.220/sync_conf/rsync_a.sh'
-	,'e:/source/server_config/61.4.185.220/sync_conf/rsync_b.sh'
+	// ,'e:/source/server_config/61.4.185.220/sync_conf/rsync_b.sh'
 	,'e:/source/server_config/61.4.185.220/sync_conf/rsync_brief.sh'
 	,'e:/source/server_config/61.4.185.220/sync_conf/rsync_brief_others.sh'
 	,'e:/source/server_config/61.4.185.220/sync_conf/rsync_first.sh'
 	,'e:/source/server_config/61.4.185.220/sync_conf/rsync_to154.sh'
-	,'e:/source/server_config/61.4.185.220/sync_conf/rsync_to_70.sh'
+	// ,'e:/source/server_config/61.4.185.220/sync_conf/rsync_to_70.sh'
 	,'e:/source/server_config/61.4.185.220/sync_conf/rsync_tqyb.sh'
 	,'e:/source/server_config/61.4.185.220/sync_conf/rsync_travel.sh'
 	,'e:/source/server_config/61.4.185.220/sync_conf/rsync_xnw.sh'
+	,'e:/source/server_config/61.4.185.220/sync_conf/1.sh'
 	],
 	toFile: 'e:/source/server_config/61.4.185.220/'+(new Date().format('yyyy-MM-dd_hh-mm-ss'))+'.js'
 }
@@ -36,7 +37,12 @@ var getConfig = function(content,flag){
 		if(!/^rsync/.test(line)){//排除ssh的命令
 			return;
 		}
-		line = line.replace(/(['"])-e ssh -p \d+\1/g,'');
+		var match = /(['"])-e ssh -p (\d+)\1/.exec(line);
+		if(match){
+			line = line.replace(match[0],'');
+			var port = match[2];
+		}
+		
 		var params = line.split(/\s+/);
 		var toPath = params.pop();
 		var fromPath = params.pop();
@@ -66,6 +72,10 @@ var getConfig = function(content,flag){
 		if(match){
 			rsync['logPrefix'] = match[1];
 		}
+		if(port){
+			rsync['port'] = port;
+		}
+		
 		totalConfig[fromPath]['rsync'].push(rsync);
 		if(flag){
 			totalConfig[fromPath]['flag'] || (totalConfig[fromPath]['flag'] = []);

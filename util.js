@@ -265,3 +265,17 @@ exports.sysError = function(logPath){
 		});
 	}
 })();
+/*得到本机IP*/
+exports.getIp = function(){
+	var ips = [];
+	var os = require('os'); 
+	var networks = os.networkInterfaces();
+	for(var i in networks){
+		networks[i].forEach(function(item){
+			if(item.family == 'IPv4' && '127.0.0.1' != item.address){  
+		        ips.push(item.address);  
+		    }  
+		});
+	}
+	return ips;
+}
