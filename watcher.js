@@ -548,26 +548,33 @@ exports.Watcher = (function(){
         delete require.cache[configPath];//清空加载缓存
         Watcher.init();
         var newWatcherInfo = config.watcher.info;
-        for(var i in newWatcherInfo){
+
+        //进行排序，让父级尽量靠前
+        Object.keys(newWatcherInfo).sort(function(a,b){
+            return a.split(path.sep).length > b.split(path.sep).length
+        }).forEach(function(i){
             if(oldWatcherInfo[i]){
                 var newW = newWatcherInfo[i];
                 var oldW = oldWatcherInfo[i];
                 newW.forEach(function(vNew,iNew){
                     var oldWIndex = oldW.indexOf(vNew);
                     if(oldWIndex > -1){
-                        oldW.splice(oldWIndex,1);
+                        oldW.splice(oldWIndex,1);//删除旧的
                     }else{
-                        _this.initAddWatch(vNew);
+                        _this.initAddWatch(vNew);//添加新的监控
                     }
                 });
+                //要删除的旧的监控
                 oldW.forEach(function(v,i){
                     _this.removeWatch(v);
                 });
             }else{
                 _this.initAddParentWatch(i,newWatcherInfo[i]);
             }
-            delete oldWatcherInfo[i];
-        }
+            delete oldWatcherInfo[i];//处理完后删除
+        });
+        
+        //删除计算出的父级监控
         for(var i in oldWatcherInfo){
             _this.removeWatch(i);
         }

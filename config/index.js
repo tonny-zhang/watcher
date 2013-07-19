@@ -55,7 +55,18 @@ var config = {
 		}
 		,
 		{
-			'path': 'd:/test/html/a1/1/',
+			'path': 'd:/test/html/a1/b1/1.txt',
+			'isFile': true,
+			'rsync': [{
+					'address': 'sam@61.4.185.111:/zkTest/html/b1/1/',//同步的目标地址
+					'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
+					'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
+				}
+			]
+		}
+		,
+		{
+			'path': 'd:/test/html/a1/',
 			'rsync': [{
 					'address': 'sam@61.4.185.111:/zkTest/html/b1/1/',//同步的目标地址
 					'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
