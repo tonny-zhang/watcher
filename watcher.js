@@ -474,10 +474,11 @@ exports.Watcher = (function(){
             var type;
             /*新建文件时，先触发创建再触发修改*/
             //rsync把传上来的文件放入临时文件里，然后再重命名
-            if(mask & Inotify.IN_MODIFY || mask & Inotify.IN_MOVED_TO){
-                if(_modify(fileName)){
+            //cms里定时任务生成的文件，只触发了IN_OPEN和IN_CLOSE_WRITE
+            if(mask & Inotify.IN_MODIFY || mask & Inotify.IN_MOVED_TO || mask & Inotify.IN_CLOSE_WRITE /*|| mask & Inotify.IN_CLOSE_NOWRITE*/){
+                // if(_modify(fileName)){
                     type = Watcher.MODIFY;
-                }
+                // }
             }else if(mask & Inotify.IN_CREATE){
                 if (mask & Inotify.IN_ISDIR){
                     if(watcher.options.isRecursive){
@@ -518,9 +519,9 @@ exports.Watcher = (function(){
                 fullname = _path;//删除时记录下删除的全路径
             }else if(mask & Inotify.IN_IGNORED){
                 _log('rmWatcher',fullname||watchPath);
-            }else{
-                _debug([JSON.stringify(event),watchPath,fullname].join('_'));
             }
+
+            _debug(type,[JSON.stringify(event),watchPath,fullname].join('_'));
             if(type){
                 watcher._emit(type,fullname,fileName,mask & Inotify.IN_ISDIR?Watcher.TYPE_DIR:Watcher.TYPE_FILE);
             }
@@ -535,7 +536,7 @@ exports.Watcher = (function(){
         _log = watcherUtil.prefixLogSync(_logPath,'watcher');
         _print = _log;//watcherUtil.print;
         _error = watcherUtil.errorSync(_logPath);
-        _debug = config.debug?watcherUtil.prefixLogSync(_logPath,'debug'):function(){};
+        _debug = config.isDebug?watcherUtil.prefixLogSync(_logPath,'debug'):function(){};
     }
     Watcher.init();//初始化参数
 
