@@ -26,12 +26,11 @@
 ## 部署
   部署一定要保证关键文件及文件夹的读写权限
   1. 日志目录（config.logPath）
-  2. 监控程序文件锁（config.flock.lockFile）
-  3. 运行程序文件锁（crontab里的设置）
-  4. 临时文件存放位置（config.copyToPath）
-  5. rsync采用ssh认证码机制，一定要确保运行程序用户ssh已经认证
+  2. 运行程序文件锁（crontab里的设置）
+  3. 临时文件存放位置（config.copyToPath）
+  4. rsync采用ssh认证码机制，一定要确保运行程序用户ssh已经认证
 
-crontab里配置  `*/1 * * * * /usr/bin/flock -xn /var/run/watcherRun.lock -c 'node /tonny/nodejs/watcher/run.js > /tonny/log/crontab_run.log 2>&1'`
+crontab里配置  `*/1 * * * * /usr/bin/node /tonny/nodejs/watcher/run.js > /tonny/log/crontab_run.log 2>&1`
 
 ## shell脚本说明
 1. `confInotify.sh`自动写inotify的配置
@@ -40,6 +39,8 @@ crontab里配置  `*/1 * * * * /usr/bin/flock -xn /var/run/watcherRun.lock -c 'n
 4. `stopWatcher.sh`强制停`memoryWatcher.js`的相关进程
 5. `tryRestart.sh`目标机上定时检测是不是需要重启，强制停`run.js`和`memoryWatcher.js`的相关进程
 6. `udateSource.sh`把源码同步到指定的部署机上
+7. `tongji/logPath.js`输出配置文件里的日志目录
+8. `tongji/isDeal.sh`查看监控目录下的文件的物理更新时间，监控到的时间及处理时间
 
 ## 可能遇到问题
 ### 环境安装
