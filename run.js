@@ -8,6 +8,14 @@ var fs = require('fs');
 var logPath = config.logPath;
 var currentDir = __dirname;
 
+//处理临时文件名
+(function(){
+	var currentTime = new Date().format('yyyyMMddhhmmss');//以秒为单位足矣
+	util.prefixLogSync(logPath,config.runLogPrefix)('start run '+currentTime);
+	config.watcher.forEach(function(v){
+		v.tempName += currentTime;
+	});
+})();
 var _runFn = function(){
 	util.sysError(logPath);
 	//运行监控
@@ -22,9 +30,9 @@ var _runFn = function(){
 	//运行处理
 	(function(){
 		var dealTreeMemory = require('./dealTreeMemory');
-		var totalRunTime = 53000;//程序运行总时间
+		var totalRunTime = 55000;//程序运行总时间,给最后一次处理5秒的处理时间
 		var usedTime = 0;
-		var delay = 5000;
+		var delay = 3000;
 		var _logRun = util.prefixLogSync(logPath,config.runLogPrefix);
 		var _logDeal = util.prefixLogSync(logPath,config.dealLogPrefix);
 		var _rsyncErrLog = util.prefixLogSync(logPath,config.rsyncErrLogPrefix);
@@ -32,7 +40,6 @@ var _runFn = function(){
 		var rsyncCommand = [config.rsync.bin,config.rsync.param].join(' ');
 		var rsyncArr = [];
 		var copyToPath = path.normalize(config.copyToPath);
-		
 		var dealCommand = function(rsyncPath,rsyncInfo,watcherPath){
 			if(rsyncPath && util.isArray(rsyncInfo) && rsyncInfo.length > 0){
 				var temp = [];
@@ -133,7 +140,7 @@ var _runFn = function(){
 					var time = (+new Date() - startTime);
 					usedTime += time+delay;
 					_logRun('takes '+time+'ms');
-					if(usedTime < totalRunTime){
+					if(usedTime + delay < totalRunTime){
 						setTimeout(run,delay);
 					}
 				});
