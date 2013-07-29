@@ -31,7 +31,7 @@ function deal(configPath){
 	});
 	var _log = util.prefixLogSync(config.logPath,config.prefixLogname);
 	var _error = util.prefixLogSync(config.logPath,config.prefixErrorLogname);
-	var _rm = require('os').platform() == 'linux': function(_path){
+	var _rm = require('os').platform() == 'linux'? function(_path){
 		util.command('rm -rf '+_path,function(){
 			_log('rmdir',_path);
 		});
