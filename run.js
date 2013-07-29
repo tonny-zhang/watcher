@@ -22,7 +22,7 @@ var _runFn = function(){
 	//运行处理
 	(function(){
 		var dealTreeMemory = require('./dealTreeMemory');
-		var totalRunTime = 55000;//程序运行总时间
+		var totalRunTime = 53000;//程序运行总时间
 		var usedTime = 0;
 		var delay = 5000;
 		var _logRun = util.prefixLogSync(logPath,config.runLogPrefix);
