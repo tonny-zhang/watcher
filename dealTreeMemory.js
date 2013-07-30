@@ -27,7 +27,7 @@ function _dealTree(tree){
 			var subTreeNode = treeNode[i];
 			if(subTreeNode == 0){
 				util.copyFileSync(fromPath,toPath);
-				_log('copyFile',fromPath);
+				_log('copyFile',fromPath,toPath);
 			}else{
 				util.mkdirSync(toPath);
 				_log('mkdir',toPath);
@@ -37,7 +37,9 @@ function _dealTree(tree){
 	}
 	//优先处理子目录
 	config.watcher.sort(function(a,b){
-		return a.path.split(path.sep).length < b.path.split(path.sep).length;
+		var aLen = a.path.split(path.sep).length;
+		var bLen = b.path.split(path.sep).length
+		return  (a.isFile?aLen+1:aLen) < (b.isFile?bLen+1:bLen);
 	});
 	config.watcher.forEach(function(v){
 		var driInfo = tree;
