@@ -57,15 +57,23 @@ var createHttpServer = require('./createHttpServer');
 			for(var i in watcherCache){
 				cache.push(i);
 			}
+			//split(path.sep)时使用
+			var _addSepToFilePath = function(_path){
+				_path = path.normalize(_path);
+				if(_path.lastIndexOf(_path.length-1) != path.sep){
+					_path += path.sep;
+				}
+				return _path;
+			}
 			//进行排序，让父级尽量靠前
 			cache.sort(function(a,b){
-				return a.split(path.sep).length > b.split(path.sep).length
+				return _addSepToFilePath(a).split(path.sep).length > _addSepToFilePath(b).split(path.sep).length
 			});
 			for(var i = 0,j=cache.length;i<j;i++){
 				var pPath = cache[i];
 				var sub = watcherCache[pPath];
 				sub.sort(function(a,b){
-					return a.split(path.sep).length > b.split(path.sep).length
+					return _addSepToFilePath(a).split(path.sep).length > _addSepToFilePath(b).split(path.sep).length
 				});
 				watcher.initAddParentWatch(pPath,sub);
 			}
