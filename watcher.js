@@ -73,7 +73,6 @@ var _innerUtil = (function(){
             if(!_path){
                 return false;
             }
-            // console.log(_path);
             return watchPathList[path.normalize(_path)] || watchPathList[path.normalize(path.join(_path,'.',path.sep))];
         }
         /*得到软链接的真实地址*/
@@ -308,6 +307,7 @@ exports.Watcher = (function(){
    
     /*提供统一的遍历目录并初始化接口*/
     Watcher.prototype._readDir = function(dir,isInit,callback){
+        console.log(dir);
         try{
             if(!fs.statSync(dir).isDirectory()){
                 return;
@@ -379,6 +379,7 @@ exports.Watcher = (function(){
     }
     /*删除指定路径的监控*/
     Watcher.prototype.removeWatch = function(watchPath){
+        watchPath = path.normalize(path.join(watchPath, '.'));
         if(!watchPathList[watchPath]){
             return;
         }
@@ -475,10 +476,13 @@ exports.Watcher = (function(){
             /*新建文件时，先触发创建再触发修改*/
             //rsync把传上来的文件放入临时文件里，然后再重命名
             //cms里定时任务生成的文件，只触发了IN_OPEN和IN_CLOSE_WRITE
-            if(mask & Inotify.IN_MODIFY || mask & Inotify.IN_MOVED_TO || mask & Inotify.IN_CLOSE_WRITE /*|| mask & Inotify.IN_CLOSE_NOWRITE*/){
-                // if(_modify(fileName)){
+            if(mask & Inotify.IN_MODIFY || mask & Inotify.IN_MOVED_TO || mask & Inotify.IN_CLOSE_WRITE /*|| mask & Inotify.IN_CLOSE_NOWRITE*/){                
+                //当文件夹有修改时处理
+                if(mask & Inotify.IN_ISDIR){
+                    return watcher.addWatch(fullname);
+                }else{
                     type = Watcher.MODIFY;
-                // }
+                }
             }else if(mask & Inotify.IN_CREATE){
                 if (mask & Inotify.IN_ISDIR){
                     if(watcher.options.isRecursive){
@@ -505,18 +509,14 @@ exports.Watcher = (function(){
                     }
                     type = Watcher.CREATE_FILE;
                 }
-            }else if(mask & Inotify.IN_DELETE){
+            }else if(mask & Inotify.IN_DELETE || mask & Inotify.IN_MOVED_FROM){
                 type = Watcher.DELETE;
                 if (mask & Inotify.IN_ISDIR){
-                    var _watch = watchPathList[fullname];
-                    delete watchPathList[_watch];
-                    delete watchPathList[fullname];
+                    watcher.removeWatch(fullname);
                 }
             }else if(mask & Inotify.IN_DELETE_SELF){
                 var _path = watchPathList[watch];
-                delete watchPathList[watch];
-                delete watchPathList[_path];
-                fullname = _path;//删除时记录下删除的全路径
+                watcher.removeWatch(_path);
             }else if(mask & Inotify.IN_IGNORED){
                 _log('rmWatcher',fullname||watchPath);
             }
@@ -548,10 +548,9 @@ exports.Watcher = (function(){
         delete require.cache[configPath];//清空加载缓存
         Watcher.init();
         var newWatcherInfo = config.watcher.info;
-
-        //进行排序，让父级尽量靠前
+        
         Object.keys(newWatcherInfo).sort(function(a,b){
-            return a.split(path.sep).length > b.split(path.sep).length
+            return watcherUtil.getPathDepth(a) > watcherUtil.getPathDepth(b);
         }).forEach(function(i){
             if(oldWatcherInfo[i]){
                 var newW = newWatcherInfo[i];
@@ -564,6 +563,7 @@ exports.Watcher = (function(){
                         _this.initAddWatch(vNew);//添加新的监控
                     }
                 });
+
                 //要删除的旧的监控
                 oldW.forEach(function(v,i){
                     _this.removeWatch(v);
@@ -573,10 +573,12 @@ exports.Watcher = (function(){
             }
             delete oldWatcherInfo[i];//处理完后删除
         });
-        
-        //删除计算出的父级监控
+        //删除计算出的父级监控的子目录
+        //这里计算出的父级目录有可能还有其它目录在用
         for(var i in oldWatcherInfo){
-            _this.removeWatch(i);
+            oldWatcherInfo[i].forEach(function(_p){
+                _this.removeWatch(_p);
+            });            
         }
     }
     Watcher.CREATE_FILE = 'create_file';

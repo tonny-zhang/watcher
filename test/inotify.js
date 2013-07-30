@@ -21,6 +21,11 @@ var dir = {
     watch_for:Inotify.IN_ALL_EVENTS,
     callback: function(event){
     	console.log(event);
+        for(var i in Inotify){
+            if(Inotify[i] & event.mask){
+                console.log(i,Inotify[i]);
+            }
+        }
     }
 };
 var watch = inotify.addWatch(dir);

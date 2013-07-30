@@ -52,11 +52,6 @@ var createHttpServer = require('./createHttpServer');
 			if(config.port){
 				createHttpServer(config.port,tree,watcher);
 			}
-			var watcherCache = config.watcher.info;
-			var cache = [];
-			for(var i in watcherCache){
-				cache.push(i);
-			}
 			//split(path.sep)时使用
 			var _addSepToFilePath = function(_path){
 				_path = path.normalize(_path);
@@ -65,19 +60,17 @@ var createHttpServer = require('./createHttpServer');
 				}
 				return _path;
 			}
+			var watcherCache = config.watcher.info;
 			//进行排序，让父级尽量靠前
-			cache.sort(function(a,b){
-				return _addSepToFilePath(a).split(path.sep).length > _addSepToFilePath(b).split(path.sep).length
-			});
-			for(var i = 0,j=cache.length;i<j;i++){
-				var pPath = cache[i];
-				var sub = watcherCache[pPath];
+	        Object.keys(watcherCache).sort(function(a,b){
+	            return watcherUtil.getPathDepth(a) > watcherUtil.getPathDepth(b);
+	        }).forEach(function(i){
+				var sub = watcherCache[i];
 				sub.sort(function(a,b){
-					return _addSepToFilePath(a).split(path.sep).length > _addSepToFilePath(b).split(path.sep).length
+					return watcherUtil.getPathDepth(a) > watcherUtil.getPathDepth(b);
 				});
-				watcher.initAddParentWatch(pPath,sub);
-			}
-			
+				watcher.initAddParentWatch(i,sub);
+	        });			
 		})();
 	}
 })();

@@ -279,3 +279,19 @@ exports.getIp = function(){
 	}
 	return ips;
 }
+/*
+主要用在排序上
+得到目录的深度，如：
+/a/b/ 	=> 	3
+/a/b 	=> 	2
+*/
+exports.getPathDepth = function(_path){
+	if(!_path){
+		return 0;
+	}
+	_path = path.normalize(_path);
+	if(_path.lastIndexOf(_path.length-1) != path.sep){
+		_path += path.sep;
+	}
+	return _path.split(path.sep).length;
+}
