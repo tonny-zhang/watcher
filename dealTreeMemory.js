@@ -64,8 +64,9 @@ function _dealTree(tree){
 			var toPath = path.join(copyToPath,v.tempName);
 			if(isWatchingFile && v.isFile){
 				var filePath = v.path;
-				util.copyFileSync(filePath,path.join(toPath,path.basename(filePath)));
-				_log('copyFile',filePath);
+				var newPath = path.join(toPath,path.basename(filePath));
+				util.copyFileSync(filePath,newPath);
+				_log('copyFile',filePath,newPath);
 			}else{
 				_deal(v.path,toPath,driInfo);
 			}

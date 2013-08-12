@@ -55,7 +55,8 @@ var _runFn = function(){
 		}
 		//处理同步命令处理
 		watcherInfo.forEach(function(v){
-			var tempPath = path.join(copyToPath,v.tempName)+'/';
+			//v.isFile时，rsync命令格式如：rsync -WPaz '-e ssh -p 2222'  /tmp/footer.htm sam@*.*.*.*:/pub/footer.htm
+			var tempPath = path.join(copyToPath,v.tempName) + '/' + (v.isFile?path.basename(v.path):'');
 			dealCommand(tempPath,v.rsync,v.path);
 		});
 		dealCommand(path.join(copyToPath,config.deletedFileName),config.deleteRsync);
