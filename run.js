@@ -40,7 +40,7 @@ var _runFn = function(){
 		var rsyncCommand = [config.rsync.bin,config.rsync.param].join(' ');
 		var rsyncArr = [];
 		var copyToPath = path.normalize(config.copyToPath);
-		var dealCommand = function(rsyncPath,rsyncInfo,watcherPath){
+		var dealCommand = function(rsyncPath,rsyncInfo,watcherPath,tempDir){
 			if(rsyncPath && util.isArray(rsyncInfo) && rsyncInfo.length > 0){
 				var temp = [];
 				rsyncInfo.forEach(function(v){
@@ -50,14 +50,15 @@ var _runFn = function(){
 					var endCommand = "echo $(date '+%Y-%m-%d %H:%M:%S')  end >> "+_logPath;
 					temp.push([startCommand,command,endCommand].join(';'));
 				});
-				rsyncArr.push({'path':rsyncPath,'rsync': temp});
+				rsyncArr.push({'path':rsyncPath,'rsync': temp,'tempDir': tempDir || rsyncPath});
 			}
 		}
 		//处理同步命令处理
 		watcherInfo.forEach(function(v){
 			//v.isFile时，rsync命令格式如：rsync -WPaz '-e ssh -p 2222'  /tmp/footer.htm sam@*.*.*.*:/pub/footer.htm
-			var tempPath = path.join(copyToPath,v.tempName) + '/' + (v.isFile?path.basename(v.path):'');
-			dealCommand(tempPath,v.rsync,v.path);
+			var tempDir = path.join(copyToPath,v.tempName);
+			var tempRsyncPath = tempDir + '/' + (v.isFile?path.basename(v.path):'');
+			dealCommand(tempRsyncPath,v.rsync,v.path,tempDir);
 		});
 		dealCommand(path.join(copyToPath,config.deletedFileName),config.deleteRsync);
 
@@ -116,8 +117,8 @@ var _runFn = function(){
 						_rsyncErrLog(_errInfo);
 						callback();
 					}else{
-						util.command('rm -rf '+rsyncInfo.path,function(){
-							_logDeal('rm',rsyncInfo.path);
+						util.command('rm -rf '+rsyncInfo.tempDir,function(){
+							_logDeal('rm',rsyncInfo.tempDir);
 							callback();
 						});
 					}
