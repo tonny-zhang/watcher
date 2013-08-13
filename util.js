@@ -205,9 +205,11 @@ exports.extend = function(a,b,c,d){
 /*直接运行外部命令*/
 ;(function(){
 	var exec = require('child_process').exec;
-	exports.command = function(command,callback){
+	//这里要捕捉到命令的错误输出，一定不可以把错误重定向
+	exports.command = function(command,callback,timeout){
 		callback || (callback = function(){});
-		var runCommand = exec(command,function(error, stdout, stderr){
+		// add timeout option
+		var runCommand = exec(command,{timeout: +timeout || 0},function(error, stdout, stderr){
 			if(error || stderr){
 				callback(error||stderr);
 			}else{
@@ -230,9 +232,9 @@ exports.extend = function(a,b,c,d){
 		// 	callback(errMsg,result);
 		// });
 	}
-	exports.command.su = function(user,command,callback){
+	exports.command.su = function(user,command,callback,timeout){
 		command = ['su - '+user+' << EOF',command,'EOF'].join('\n');
-		exports.command(command,callback);
+		exports.command(command,callback,timeout);
 	}
 })();
 	
@@ -244,7 +246,7 @@ exports.sysError = function(logPath){
 }
 ;(function(){
 	var http = require('http');
-	exports.curl = function (host,port,path,callback){
+	exports.curl = function (host,port,path,callback,timeout){
 		callback || (callback = function(){});
 		//通过http得到内存中目录结构及要删除的信息
 		var req = http.get({
@@ -263,6 +265,12 @@ exports.sysError = function(logPath){
 		req.on('error', function(e) {
 			callback(e);
 		});
+		if(timeout > 0){
+			req.setTimeout(timeout,function(){
+				req.abort();
+				callback(new Error('timeout'));
+			});
+		}
 	}
 })();
 /*得到本机IP*/
