@@ -7,6 +7,7 @@ var fs = require('fs');
 var copyToPath = path.normalize(config.copyToPath);
 
 var _log = util.prefixLogSync(config.logPath,config.dealLogPrefix);
+var _logError = util.errorSync(config.logPath);
 function _dealData(data,callback){
 	callback || (callback = function(){});
 	if(data){
@@ -14,6 +15,20 @@ function _dealData(data,callback){
 		_dealDeleteTree(data.deleteTree);
 	}
 	callback();
+}
+
+/*复制文件，保证文件内容不为空*/
+var _copy = function(sourcePath,targetPath){
+	if(!fs.existsSync(sourcePath)){
+		_logError('copy',sourcePath,'no exists');
+		return;
+	}
+	if(fs.statSync(sourcePath).size > 0){
+		util.copyFileSync(sourcePath,targetPath);
+		_log('copyFile',sourcePath,targetPath);
+	}else{
+		_logError('copy',sourcePath,'size 0');
+	}
 }
 /*处理目录结构*/
 function _dealTree(tree){
@@ -26,8 +41,7 @@ function _dealTree(tree){
 			var fromPath = path.normalize(path.join(fromDir,i));
 			var subTreeNode = treeNode[i];
 			if(subTreeNode == 0){
-				util.copyFileSync(fromPath,toPath);
-				_log('copyFile',fromPath,toPath);
+				_copy(fromPath,toPath);
 			}else{
 				util.mkdirSync(toPath);
 				_log('mkdir',toPath);
@@ -65,8 +79,7 @@ function _dealTree(tree){
 			if(isWatchingFile && v.isFile){
 				var filePath = v.path;
 				var newPath = path.join(toPath,path.basename(filePath));
-				util.copyFileSync(filePath,newPath);
-				_log('copyFile',filePath,newPath);
+				_copy(filePath,newPath);
 			}else{
 				_deal(v.path,toPath,driInfo);
 			}
@@ -109,7 +122,7 @@ function getDataFromMemory(callback){
 			}
 			_dealData(data,callback);
 		}
-	});
+	},100);//设置超时时间为100ms
 }
 /*从json文件中得到目录结构及要删除的信息
   !!可以在shell中用
@@ -152,3 +165,4 @@ function getDataFromJsonFile(filePath){
 
 exports.getDataFromMemory = getDataFromMemory;
 exports._dealData = _dealData;
+exports._copy = _copy;
