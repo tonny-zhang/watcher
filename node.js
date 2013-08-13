@@ -1,6 +1,5 @@
 /*用于存储目录结构的数据结构类*/
 
-var http = require('http');
 var util = require('util');
 var path = require('path');
 var url = require('url');
