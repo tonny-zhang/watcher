@@ -46,7 +46,8 @@ var _runFn = function(){
 				rsyncInfo.forEach(function(v){
 					var _logPath = path.join(logPath,v.logPrefix+'_$(date +%Y-%m-%d).log');
 					var startCommand = "echo $(date '+%Y-%m-%d %H:%M:%S') "+(watcherPath+' '+rsyncPath)+"'=>"+v.address+"'"+' >> '+_logPath;
-					var command = [rsyncCommand,(v.param||''),"'-e ssh -p "+v.port+"'",rsyncPath,v.address,'2>&1','>>',_logPath].join(' ');
+					//这里的错误交由rsync函数处理
+					var command = [rsyncCommand,(v.param||''),"'-e ssh -p "+v.port+"'",rsyncPath,v.address,'>>',_logPath].join(' ');
 					var endCommand = "echo $(date '+%Y-%m-%d %H:%M:%S')  end >> "+_logPath;
 					temp.push([startCommand,command,endCommand].join(';'));
 				});
@@ -62,10 +63,15 @@ var _runFn = function(){
 		});
 		dealCommand(path.join(copyToPath,config.deletedFileName),config.deleteRsync);
 
-		var _execRsyncCommand = config.rsync.user?function(command,callback){
-			util.command.su(config.rsync.user,command,callback);
-		} : util.command
-		
+		var _execRsyncCommand = (function(){
+			var timeout = 1000*20;//同步命令的超时时间
+			return config.rsync.user ? function(command,callback){
+				util.command.su(config.rsync.user,command,callback,timeout);
+			}: function(command,callback){
+				util.command(command,callback,timeout);
+			}
+		})();
+
 		var _afterGetData = (function(){
 			var isSyncExec = true;//是否同步执行每个监控目录的rsync
 			return isSyncExec?function(callback){
@@ -99,6 +105,7 @@ var _runFn = function(){
 			}
 		})();
 		function deal(callback){
+			//dealTreeMemory.getDataFromMemory保证了超时处理
 			dealTreeMemory.getDataFromMemory(function(){
 				_afterGetData(callback);
 			});
@@ -110,11 +117,10 @@ var _runFn = function(){
 			var _rsyncInfo = rsyncInfo.rsync;
 			var _runNum = _rsyncInfo.length;
 			var _runedNum = 0;
-			var _errInfo = '';
+			var _isHaveError = false;
 			var _cb = function(){
 				if(_runedNum == _runNum){
-					if(_errInfo){
-						_rsyncErrLog(_errInfo);
+					if(_isHaveError){
 						callback();
 					}else{
 						util.command('rm -rf '+rsyncInfo.tempDir,function(){
@@ -124,13 +130,13 @@ var _runFn = function(){
 					}
 				}
 			}
-			_rsyncInfo.forEach(function(_r){
-				_execRsyncCommand(_r,function(err,d){
+			_rsyncInfo.forEach(function(_rsyncCommand){
+				_execRsyncCommand(_rsyncCommand,function(err,d){
 					if(err){
-						_errInfo += JSON.stringify(err);
-					}else{
-						_runedNum++;
+						_isHaveError = true;
+						_rsyncErrLog(['command:',_rsyncCommand,'err:',JSON.stringify(err)].join(' '));
 					}
+					_runedNum++;
 					_cb();
 				});
 			})

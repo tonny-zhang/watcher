@@ -71,27 +71,26 @@ var _runFn = function(){
 			var _rsyncInfo = rsyncInfo.rsync;
 			var _runNum = _rsyncInfo.length;
 			var _runedNum = 0;
-			var _errInfo = '';
+			var _isHaveError = false;
 			var _cb = function(){
 				if(_runedNum == _runNum){
-					if(_errInfo){
-						_rsyncErrLog(_errInfo);
+					if(_isHaveError){
 						callback();
 					}else{
-						util.command('rm -rf '+rsyncInfo.path,function(){
-							_logDeal('rm',rsyncInfo.path);
+						util.command('rm -rf '+rsyncInfo.tempDir,function(){
+							_logDeal('rm',rsyncInfo.tempDir);
 							callback();
 						});
 					}
 				}
 			}
-			_rsyncInfo.forEach(function(_r){
-				_execRsyncCommand(_r,function(err,d){
+			_rsyncInfo.forEach(function(_rsyncCommand){
+				_execRsyncCommand(_rsyncCommand,function(err,d){
 					if(err){
-						_errInfo += JSON.stringify(err);
-					}else{
-						_runedNum++;
+						_isHaveError = true;
+						_rsyncErrLog(['command:',_rsyncCommand,'err:',JSON.stringify(err)].join(' '));
 					}
+					_runedNum++;
 					_cb();
 				});
 			})
@@ -114,7 +113,7 @@ var _runFn = function(){
 						v.rsync.forEach(function(v){
 							var _logPath = path.join(logPath,v.logPrefix+'_handle_$(date +%Y-%m-%d).log');
 							var startCommand = "echo $(date '+%Y-%m-%d %H:%M:%S') "+(watcherPath+' '+rsyncPath)+"'=>"+v.address+"'"+' >> '+_logPath;
-							var command = [rsyncCommand,(v.param||''),"'-e ssh -p "+v.port+"'",rsyncPath,v.address,'2>&1','>>',_logPath].join(' ');
+							var command = [rsyncCommand,(v.param||''),"'-e ssh -p "+v.port+"'",rsyncPath,v.address,'>>',_logPath].join(' ');
 							var endCommand = "echo $(date '+%Y-%m-%d %H:%M:%S')  end >> "+_logPath;
 							temp.push([startCommand,command,endCommand].join(';'));
 						});
