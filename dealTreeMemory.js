@@ -112,12 +112,12 @@ function getDataFromMemory(callback){
 	callback || (callback = function(){});
 	util.curl(config.host,config.port,'/',function(err,data){
 		if(err){
-			_log('problem with request: ' + err.message);
+			_logError('problem with request: ' + JSON.stringify(err));
 		}else{
 			try{
 				data = JSON.parse(data);
 			}catch(e){
-				_log('error getDataFromMemory data wrong!'+e.message);
+				_logError('error getDataFromMemory data wrong!'+JSON.stringify(err));
 				callback(e);
 			}
 			_dealData(data,callback);
@@ -133,7 +133,7 @@ function getDataFromJsonFile(filePath){
 			var tree = require(filePath);
 			_dealData(tree);
 		}catch(e){
-			_log('getDataFromJsonFile error',e.message);
+			_logError('getDataFromJsonFile error',JSON.stringify(err));
 		}
 	}
 }
