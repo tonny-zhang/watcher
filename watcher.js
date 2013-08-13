@@ -307,7 +307,6 @@ exports.Watcher = (function(){
    
     /*提供统一的遍历目录并初始化接口*/
     Watcher.prototype._readDir = function(dir,isInit,callback){
-        console.log(dir);
         try{
             if(!fs.statSync(dir).isDirectory()){
                 return;
