@@ -1,6 +1,6 @@
-var dealTree = require('../dealTreeMemory');
+var dealTree = require('../../dealTreeMemory');
 // _dealData({"base":"d:/","tree":{"test":{"html":{"1":0,"a":{"b":{}}}}},"deleteTree":["aa/bb/c","aa/c/1.txt"]});
-_dealData({
+dealTree._dealData({
 	"tree": {
 		"opt": {
 			"deploy": {
