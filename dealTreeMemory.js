@@ -122,7 +122,7 @@ function getDataFromMemory(callback){
 			}
 			_dealData(data,callback);
 		}
-	},100);//设置超时时间为100ms
+	},1000);//设置超时时间为100ms
 }
 /*从json文件中得到目录结构及要删除的信息
   !!可以在shell中用
