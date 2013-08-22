@@ -56,6 +56,11 @@ crontab里配置  `*/1 * * * * /usr/bin/node /tonny/nodejs/watcher/run.js > /ton
   2. run.js一直处于运行状态  
      localhost不是所有电脑都有配置，可以用wget或curl模拟抓包看到效果，一直在重复连接  
      解决方案：配置config.host为'127.0.0.1'
+### 之前有大量同步的shell文件，怎么迁移？
+  `node tool/getConfigFromFile.js`会把`config/getConfigFromFile.js`里配置的shell文件提取在`config`目录下生成
+  一个`autoIndex.json`文件，`config/index.js`配置文件会自动引用这个文件
+
+  此工具可文件其它人员进行维护，重新生成完后再调用`node memoryWatcher.js reload`让监控进行重新配置即可
 
 ## 其它
 addPathAPI.js给外部提供临时的更新文件目录的接口，用法如下：
