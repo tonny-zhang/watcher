@@ -63,7 +63,7 @@ crontab里配置  `*/1 * * * * /usr/bin/node /tonny/nodejs/watcher/run.js > /ton
 
   此工具可文件其它人员进行维护，重新生成完后再调用`node memoryWatcher.js reload`让监控进行重新配置即可
 
-  *用户也可以用此工具快速地和现在用的rsync的shell脚本保持同步（可重新配置）*
+  **用户也可以用此工具快速地和现在用的rsync的shell脚本保持同步（可重新配置）**
 
 ## 其它
 addPathAPI.js给外部提供临时的更新文件目录的接口，用法如下：
