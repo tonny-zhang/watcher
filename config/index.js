@@ -1,90 +1,94 @@
 /*生产环境监控配置*/
 var path = require('path');
-var configUtil = require('../configUtil')
+var configUtil = require('../configUtil');
+try{
+	var autoWatcher = require('./autoIndex.json');
+}catch(e){};
+var watcher = (autoWatcher || []).concat([
+	// {
+	// 	'path': 'd:/test/html/1.html',
+	// 	'isFile': true,	//是否是文件
+	// 	'rsync': [{
+	// 			'address': 'sam@61.4.185.111:/zkTest/html/1.html',
+	// 			'port': 2222
+	// 		}, {
+	// 			'address': 'sam@61.4.185.111:/zkTest/html/1.html'
+	// 		}
+	// 	]
+	// }
+	// ,
+	// {
+	// 	'path': '/opt/deploy/apache-tomcat-6.0.35/webapps/web/indexfc/',
+	// 	'rsync': [{
+	// 			'address': 'sam@61.4.185.111:/zkTest/html/',
+	// 			'port': 2222,
+	// 			'param': "--exclude '2010/' --exclude '2011/' --exclude '2012/'"
+	// 		}, {
+	// 			'address': 'sam@61.4.185.111:/zkTest/html/',
+	// 			'param': "--exclude '2010/' --exclude '2011/' --exclude '2012/'"
+	// 		}
+	// 	]
+	// }
+	// ,
+	// {
+	// 	'path': 'd:/test/html/a1/www.weather.com.cn/',
+	// 	'rsync': [{
+	// 			'address': 'sam@61.4.185.111:/zkTest/www.weather.com.cn/',
+	// 			'port': 2222,
+	// 			'logPrefix': '61.4.185.111'
+	// 		}, {
+	// 			'address': 'sam@61.4.185.111:/zkTest/www.weather.com.cn/'
+	// 		}
+	// 	]
+	// }
+	// ,
+	{
+		'path': 'd:/test/html/b1/',
+		'rsync': [{
+				'address': 'sam@61.4.185.111:/zkTest/html/b1/',//同步的目标地址
+				'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
+				'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
+			}, {
+				'address': 'sam@61.4.185.112:/zkTest/html/b1/'
+			}
+		]
+	}
+	,
+	{
+		'path': 'd:/test/html/a1/b1/1.txt',
+		'isFile': true,
+		'rsync': [{
+				'address': 'sam@61.4.185.111:/zkTest/html/b1/1/',//同步的目标地址
+				'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
+				'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
+			}
+		]
+	}
+	,
+	{
+		'path': 'd:/test/html/a1/',
+		'rsync': [{
+				'address': 'sam@61.4.185.111:/zkTest/html/b1/1/',//同步的目标地址
+				'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
+				'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
+			}
+		]
+	}
+	,
+	{
+		'path': 'd:/test/server/',
+		'rsync': [{
+				'address': 'sam@61.4.185.111:/zkTest/html/b1/1/',//同步的目标地址
+				'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
+				'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
+			}
+		]
+	}
+]);
 var config = {
 	isDebug: true,
 	/*更新监控目录可以调用 `node memoryWatcher.js reload` */
-	watcher: [
-		// {
-		// 	'path': 'd:/test/html/1.html',
-		// 	'isFile': true,	//是否是文件
-		// 	'rsync': [{
-		// 			'address': 'sam@61.4.185.111:/zkTest/html/1.html',
-		// 			'port': 2222
-		// 		}, {
-		// 			'address': 'sam@61.4.185.111:/zkTest/html/1.html'
-		// 		}
-		// 	]
-		// }
-		// ,
-		// {
-		// 	'path': '/opt/deploy/apache-tomcat-6.0.35/webapps/web/indexfc/',
-		// 	'rsync': [{
-		// 			'address': 'sam@61.4.185.111:/zkTest/html/',
-		// 			'port': 2222,
-		// 			'param': "--exclude '2010/' --exclude '2011/' --exclude '2012/'"
-		// 		}, {
-		// 			'address': 'sam@61.4.185.111:/zkTest/html/',
-		// 			'param': "--exclude '2010/' --exclude '2011/' --exclude '2012/'"
-		// 		}
-		// 	]
-		// }
-		// ,
-		// {
-		// 	'path': 'd:/test/html/a1/www.weather.com.cn/',
-		// 	'rsync': [{
-		// 			'address': 'sam@61.4.185.111:/zkTest/www.weather.com.cn/',
-		// 			'port': 2222,
-		// 			'logPrefix': '61.4.185.111'
-		// 		}, {
-		// 			'address': 'sam@61.4.185.111:/zkTest/www.weather.com.cn/'
-		// 		}
-		// 	]
-		// }
-		// ,
-		{
-			'path': 'd:/test/html/b1/',
-			'rsync': [{
-					'address': 'sam@61.4.185.111:/zkTest/html/b1/',//同步的目标地址
-					'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
-					'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
-				}, {
-					'address': 'sam@61.4.185.112:/zkTest/html/b1/'
-				}
-			]
-		}
-		,
-		{
-			'path': 'd:/test/html/a1/b1/1.txt',
-			'isFile': true,
-			'rsync': [{
-					'address': 'sam@61.4.185.111:/zkTest/html/b1/1/',//同步的目标地址
-					'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
-					'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
-				}
-			]
-		}
-		,
-		{
-			'path': 'd:/test/html/a1/',
-			'rsync': [{
-					'address': 'sam@61.4.185.111:/zkTest/html/b1/1/',//同步的目标地址
-					'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
-					'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
-				}
-			]
-		}
-		,
-		{
-			'path': 'd:/test/server/',
-			'rsync': [{
-					'address': 'sam@61.4.185.111:/zkTest/html/b1/1/',//同步的目标地址
-					'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
-					'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
-				}
-			]
-		}
-	],
+	watcher: watcher,
 	port: 3333, //文件夹树访问端口
 	host: '127.0.0.1', //文件夹树访问host
 	copyToPath: 'd:/test/temp', //缓存文件队列
