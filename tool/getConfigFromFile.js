@@ -14,6 +14,8 @@ var userFullParamHaveValue = {
 var getConfig = function(content,flag){
 	content = content.replace(/[\n\r]{2,}/g,'\n');
 	var lines = content.split(/\n/);
+	var errorInfo = [];
+	var isPutoutLine = /\.1$/.test(flag);
 	lines.forEach(function(line){
 		line = line.replace(/(^\s+?)|(\s+?)$/,'');
 		if(!line || /^#/.test(line)){
@@ -31,7 +33,6 @@ var getConfig = function(content,flag){
 		var params = line.split(/\s+/);
 		var toPath = params.pop();
 		var fromPath = params.pop();
-		totalConfig[fromPath] || (totalConfig[fromPath] = {'path': fromPath,'isFile': !/\/$/.test(fromPath),'rsync':[]});
 		var usefullParam = [];
 
 		var temp;
@@ -61,12 +62,21 @@ var getConfig = function(content,flag){
 			rsync['port'] = port;
 		}
 		
-		totalConfig[fromPath]['rsync'].push(rsync);
-		if(flag){
-			totalConfig[fromPath]['flag'] || (totalConfig[fromPath]['flag'] = []);
-			totalConfig[fromPath]['flag'].push(flag);
+		if(/\*/.test(fromPath)){
+			errorInfo.push(line);
+		}else{
+			totalConfig[fromPath] || (totalConfig[fromPath] = {'path': fromPath,'isFile': !/\/$/.test(fromPath),'rsync':[]});
+			totalConfig[fromPath]['rsync'].push(rsync);
+			if(flag){
+				totalConfig[fromPath]['flag'] || (totalConfig[fromPath]['flag'] = []);
+				totalConfig[fromPath]['flag'].push(flag);
+			}
+			if(isPutoutLine){
+				console.log(fromPath,'----',line);
+			}
 		}
 	});
+	return errorInfo;
 }
 function pushConfigToFile(){
 	var watcherConfig = [];
@@ -82,6 +92,14 @@ function pushConfigToFile(){
 }
 config.fromFile.forEach(function(fromFile){
 	var content = fs.readFileSync(fromFile);
-	getConfig(content.toString(),path.basename(fromFile));
+	var errorInfo = getConfig(content.toString(),path.basename(fromFile));
+	if(errorInfo.length > 0){
+		console.log(fromFile,errorInfo);
+		var specialFromFile = fromFile+'.1'
+		if(fs.existsSync(specialFromFile)){
+			var content = fs.readFileSync(specialFromFile);
+			getConfig(content.toString(),path.basename(specialFromFile));
+		}
+	}
 });
 pushConfigToFile();	

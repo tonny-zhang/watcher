@@ -32,7 +32,7 @@ var _runFn = function(){
 		var dealTreeMemory = require('./dealTreeMemory');
 		var totalRunTime = 55000;//程序运行总时间,给最后一次处理5秒的处理时间
 		var usedTime = 0;
-		var delay = 3000;
+		var delay = config.delay.run;
 		var _logRun = util.prefixLogSync(logPath,config.runLogPrefix);
 		var _logDeal = util.prefixLogSync(logPath,config.dealLogPrefix);
 		var _rsyncErrLog = util.prefixLogSync(logPath,config.rsyncErrLogPrefix);
@@ -64,7 +64,7 @@ var _runFn = function(){
 		dealCommand(path.join(copyToPath,config.deletedFileName),config.deleteRsync);
 
 		var _execRsyncCommand = (function(){
-			var timeout = 1000*20;//同步命令的超时时间
+			var timeout = config.delay.rsync;//同步命令的超时时间
 			return config.rsync.user ? function(command,callback){
 				util.command.su(config.rsync.user,command,callback,timeout);
 			}: function(command,callback){

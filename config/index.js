@@ -111,7 +111,12 @@ var config = {
 	dealLogPrefix: 'deal',//处理内存数据日志前缀
 	runLogPrefix: 'run',//run.js运行日志前缀
 	rsyncErrLogPrefix: 'rsyncErr'//同步时错误日志
-	,ip: '192.168.1.120'
+	,ip: '192.168.1.120',
+	delay: {
+		run: 3000,		//处理程序的间隔时间
+		rsync: 1000*20,	//rsync程序执行的超时时间
+		curl: 1000*5	//执行curl得到内存数据的超时时间
+	}
 }
 //配置删除信息文件
 config.deleteRsync = [{
