@@ -126,7 +126,7 @@ var check = (function(){
 		},
 		rsync: { //配置rsync
 			bin: '',
-			param: "",
+			// param: "",
 			user: '',
 			defaultPort: 0
 		},
@@ -138,26 +138,45 @@ var check = (function(){
 	var defaultSync = {
 		'address': '',
 		'port': 0,
-		'param': ""
+		// 'param': ""
 	}
+	var desc = {}	//错误描述
 	var ERROR_NULL = 1;//配置参数值为空
+	desc[ERROR_NULL] = ['配置参数值为空',true];
 	var ERROR_NO_WATCHER = 2;//没有配置watcher
-	var ERROR_IS_FILE = 3;//没有配置或'isFile'配置不正确
+	desc[ERROR_NO_WATCHER] = ['没有配置watcher',true];
+	var ERROR_IS_FILE = 3;//"isFile"没有配置或配置不正确
+	desc[ERROR_IS_FILE] = ['"isFile"没有配置或配置不正确',true];
 	var ERROR_REPEAT_RSYNC = 4;//重复的rsync配置,可能由于父级目录配置造成
+	desc[ERROR_REPEAT_RSYNC] = ['重复的rsync配置,可能由于父级目录配置造成',true];
 	var ERROR_RSYNC_PREFIX = 5;//IP地址形式的prefix不正确
+	desc[ERROR_RSYNC_PREFIX] = ['IP地址形式的prefix不正确',false];
 	var ERROR_ILLEGAL_RSYNC_ADDRESS = 6;//不合法的同步地址
+	desc[ERROR_ILLEGAL_RSYNC_ADDRESS] = ['不合法的同步地址',true];
 	var ERROR_IP = 7;//IP不是本机IP
-
+	desc[ERROR_IP] = ['IP不是本机IP',false];
+	var ERROR_DEBUG = 8;
+	desc[ERROR_DEBUG] = ['isDebug 为true可能会造成日志激增',true];
+	var sayDesc = function(){
+		console.log('\n=== (* 表示比较重要) ===');
+		Object.keys(desc).sort(function(a,b){
+			return a.b
+		}).forEach(function(v){
+			var item = desc[v];
+			console.log(item[1]?'*':' ',v,':',item[0]);
+		});
+		console.log('=======================');
+	}
 	return function _check(config){
 		var errorInfo = [];
 		function fn (target,default_c,prefix){
 			prefix || (prefix = '');
 			for(var i in default_c){
-				if(!target[i] && target[i] != false){
+				if(!target[i] && target[i] !== false && target[i] !== 0){
 					errorInfo.push(ERROR_NULL+'\t'+prefix+i);
 				}else{
 					for(var _i in default_c[i]){
-						if(!target[i][_i] && target[i][_i] != false){
+						if(!target[i][_i] && target[i][_i] !== false && target[i][_i] !== 0){
 							errorInfo.push(ERROR_NULL+'\t'+prefix+i+':'+_i);
 						}
 					}
@@ -209,10 +228,18 @@ var check = (function(){
 		if(ips.indexOf(config.ip) == -1){
 			errorInfo.push(ERROR_IP+'\t'+config.ip+'\t should be one of '+ips);
 		}
+		if(config.isDebug){
+			errorInfo.push(ERROR_DEBUG+'\tisDebug is true');
+		}
 		if(!errorInfo.length){
 			console.log('+++++++++++++++++');
 		}else{
-			console.log(errorInfo.join('\n'));
+			errorInfo.forEach(function(v){
+				var errIndex = Number(v.split('\t')[0]);
+				var isImportant = desc[errIndex] && desc[errIndex][1];
+				console.log(isImportant?'*':' ',v);
+			});
+			sayDesc();
 		}
 		
 	}

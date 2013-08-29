@@ -86,7 +86,7 @@ var watcher = (autoWatcher || []).concat([
 	}
 ]);
 var config = {
-	isDebug: true,
+	isDebug: false,
 	/*更新监控目录可以调用 `node memoryWatcher.js reload` */
 	watcher: watcher,
 	port: 3333, //文件夹树访问端口

@@ -22,3 +22,10 @@ var currentDir = __dirname;
 	content = content.toString().replace(/(TEMP_PATH=)[^;]+;/,'$1'+config.copyToPath+';');
 	fs.writeFileSync(_path,content);
 })();
+
+(function(){
+	var _path = path.join(currentDir,'../shell/dealLog.sh');
+	var content = fs.readFileSync(_path);
+	content = content.toString().replace(/(?!LOG_PATH=`)node/,config.node.bin);
+	fs.writeFileSync(_path,content);
+})();
