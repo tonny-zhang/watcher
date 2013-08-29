@@ -133,8 +133,10 @@ var _runFn = function(){
 			_rsyncInfo.forEach(function(_rsyncCommand){
 				_execRsyncCommand(_rsyncCommand,function(err,d){
 					if(err){
-						_isHaveError = true;
-						_rsyncErrLog(['command:',_rsyncCommand,'err:',JSON.stringify(err)].join(' '));
+						if(!/^warning/i.test(err)){
+							_isHaveError = true;
+							_rsyncErrLog(['command:',_rsyncCommand,'err:',JSON.stringify(err)].join(' '));
+						}
 					}
 					_runedNum++;
 					_cb();
