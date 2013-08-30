@@ -336,7 +336,6 @@ exports.Watcher = (function(){
         var _this = this;
         _this.addWatch(watchPath,true,true);
         if(subPath){
-            _this.watchFilter.addFilter(subPath);
             //把要监控的子目录优先添加
             if(!watcherUtil.isArray(subPath)){
                 subPath = [subPath];
@@ -348,6 +347,7 @@ exports.Watcher = (function(){
     }
     /*初始化时添加目录监控(配置文件里的watcher),不过滤，遍历子目录*/
     Watcher.prototype.initAddWatch = function(watchPath){
+        this.watchFilter.addFilter(watchPath);
         this.addWatch(watchPath,true,true);
         this._readDir(watchPath,true);
     }
