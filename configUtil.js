@@ -264,6 +264,14 @@ var server = function(config){
 		item.map = _map;
 	});
 }
+var callback = function(config){
+	var watcher = config.watcher;
+	watcher.forEach(function(v){
+		v.path = path.normalize(v.path);
+	});
+	return config;
+}
 exports.index = index;
 exports.check = check;
 exports.server = server;
+exports.callback = callback;
