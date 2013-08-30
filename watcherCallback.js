@@ -9,7 +9,7 @@ var fn = function(d){
 	var filter = config.watcher.forEach(function(v){
 		if(~d.fullname.indexOf(v.path)){
 			if(v.command){
-				watcherUtil.command(v.command);
+				watcherUtil.command([v.command,d.fullname].join(' '));
 			}
 		}
 	});
