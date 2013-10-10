@@ -1,7 +1,7 @@
 {
   "name": "watcher",
   "description": "基于Inotify的文件监控，并实现rsync同步大量静态文件的解决方案",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "tonny",
     "email": "wodexintiao@gmail.com"
