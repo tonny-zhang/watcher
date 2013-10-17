@@ -4,7 +4,7 @@ var url = require('url');
 var fs = require('fs');
 var config = require('./config');
 var _log = util.prefixLogSync(config.logPath,'watcher');
-
+var _logTest = util.prefixLogSync(config.logPath,'test');
 /*创建用于其它程序访问的http服务*/
 var _createServer = function(port,node,watcher){
 	var dealContent = function(content){
@@ -15,6 +15,7 @@ var _createServer = function(port,node,watcher){
 		});
 	}
 	var server = http.createServer(function (req, res) {
+		_logTest(req.url);
 		var params = url.parse(req.url,true).query;
 		var resConent = '';
 		var asyncFn ;//不需要及时得到结果的，可以异步执行，尽快响应请求
@@ -50,7 +51,10 @@ var _createServer = function(port,node,watcher){
 		if(asyncFn){
 			setTimeout(asyncFn,10);
 		}
+		_logTest(req.url,1);
+		res.writeHead(200);
 		res.end(resConent);
+		_logTest(req.url,2);
 	}).on('listening',function(d){
 		_log('run in localhost:'+port);
 	}).listen(port);
