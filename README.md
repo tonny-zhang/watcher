@@ -18,6 +18,7 @@
 ## 配置
 1. `config/index.js`为主配置文件
 2. 详细配置说明请参考：`config/index.js`内容
+3. `config/callback.js`为监控文件更新并调用配置文件里的回调函数（可以是外部脚本）
 
 ## 查看系统支持情况
 1. 查看是否支持inotify  `ls /proc/sys/fs/inotify`
@@ -30,7 +31,12 @@
   3. 临时文件存放位置（config.copyToPath）
   4. rsync采用ssh认证码机制，一定要确保运行程序用户ssh已经认证
 
-crontab里配置  `*/1 * * * * /usr/bin/node /tonny/nodejs/watcher/run.js > /tonny/log/crontab_run.log 2>&1`
+### crontab里配置  
+1. 运行监控并实时同步
+`*/1 * * * * /usr/bin/node /tonny/nodejs/watcher/run.js > /tonny/log/crontab_run.log 2>&1`
+
+2. 运行监控并调用配置回调
+`*/1 * * * * /usr/bin/node /tonny/nodejs/watcher/watcherCallback.js > /tonny/log/crontab_callback.log 2>&1`
 
 ## shell脚本说明
 1. `confInotify.sh`自动写inotify的配置
