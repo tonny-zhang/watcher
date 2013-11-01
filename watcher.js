@@ -288,7 +288,6 @@ exports.Watcher = (function(){
         }
         return regExp.test(text);
     }
-    var _watcherCache = [];
 
 	var inotify = new Inotify();
     var defaultOptions = {isRecursive:true}
@@ -296,12 +295,11 @@ exports.Watcher = (function(){
 
     var Watcher = function(options){
     	if(!this instanceof Watcher){
-    		return new Watcher();
+    		return new Watcher(options);
     	}
         this.options = options = watcherUtil.extend({},defaultOptions,options);
         this.ignorePath = options.ignorePath && (util.isRegExp(options.ignorePath)?options.ignorePath:new RegExp(options.ignorePath.replace('.','\\\.').replace('*','.*')));
         this.watchFilter = new _innerUtil.watchFilter();
-        _watcherCache.push(this);
     }
     util.inherits(Watcher,EventEmitter);
    
