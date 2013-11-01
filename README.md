@@ -36,7 +36,7 @@
 `*/1 * * * * /usr/bin/node /tonny/nodejs/watcher/run.js > /tonny/log/crontab_run.log 2>&1`
 
 2. 运行监控并调用配置回调
-`*/1 * * * * /usr/bin/node /tonny/nodejs/watcher/watcherCallback.js > /tonny/log/crontab_callback.log 2>&1`
+`*/1 * * * * /usr/bin/flock -xn /var/run/watcherCallback.lock -c 'nohup /usr/local/bin/node /tonny/nodejs/watcherCallback.js >> /tonny/log/watcher/crontab_callback.log 2>&1 &'`
 
 ## shell脚本说明
 1. `confInotify.sh`自动写inotify的配置
