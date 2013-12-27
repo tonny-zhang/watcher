@@ -62,7 +62,7 @@
      localhost不是所有电脑都有配置，可以用wget或curl模拟抓包看到效果，一直在重复连接  
      解决方案：配置config.host为'127.0.0.1'
 
-  3. 同步的时候一直报错（rsyncErr_日期.log）
+  3. 同步的时候一直报错（rsyncErr_日期.log） 
      解决方案：手动运行rsync命令，确定rsync运行正常;确保`config/index.js`里`rsync`配置项里的`user`配置正常
      > rsync.user在监控用户(crontab运行用户)和同步用户(rsync同步用户)不是同一个的时候设置【当两个用户不同时，监控用户需要有su到同步用户的权限】
      
