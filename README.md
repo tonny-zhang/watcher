@@ -52,7 +52,9 @@
 ### 环境安装
   1. make: g++: Command not found  
      解决方案：apt-get install g++
-
+  2. 同步的时候一直报错（rsyncErr_日期.log）
+     解决方案：手动运行rsync命令，确定rsync运行正常;确保`config/index.js`里`rsync`配置项里的`user`配置正常
+     > rsync.user在监控用户(crontab运行用户)和同步用户(rsync同步用户)不是同一个的时候设置【当两个用户不同时，监控用户需要有su到同步用户的权限】
 ### 部署
   1. 无法创建监控  
      /proc/sys/fs/inotify/max_queued_events  
