@@ -1,6 +1,6 @@
 ## 默认日志文件说明
 * `crontab_run.log` 
-	run.js启动时的输出日志，可以从此日志分析run.js里错误
+> run.js启动时的输出日志，可以从此日志分析run.js里错误
 * `memoryWatcher.log` 
 	memoryWatcher.js启动时的输出日志，可以从此日志分析memoryWatcher.js里的错误
 * `run_日期.log` 
