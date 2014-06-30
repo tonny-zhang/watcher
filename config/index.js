@@ -1,6 +1,6 @@
 /*生产环境监控配置*/
 var path = require('path');
-var configUtil = require('../configUtil');
+var configUtil = require('configUtil');
 try{
 	var autoWatcher = require('./autoIndex.json');
 }catch(e){};
