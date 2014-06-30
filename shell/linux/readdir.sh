@@ -4,7 +4,9 @@ FILE_LOG=/tonny/log_read/file.log
 
 INIT_PATH=${1}
 BEGIN_SECOND=${2}
+OVER_FILE_PATH=${3}
 #echo $(date '+%Y-%m-%d %H:%M:%S')" start"
+start_time=$(date '+%s')
 function ergodic(){
         for file in ` ls $1 `
         do
@@ -30,4 +32,6 @@ function ergodic(){
 echo _BEGIN_
 ergodic $INIT_PATH
 echo _END_
+end_time=$(date '+%s')
+echo $((end_time-start_time))s>$OVER_FILE_PATH
 #echo $(date '+%Y-%m-%d %H:%M:%S')" end"
