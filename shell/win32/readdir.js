@@ -2,7 +2,7 @@ var fs = require('fs');
 var path = require('path');
 
 var root_path = process.argv[2];
-var time = process.argv[3];
+var begin_second = process.argv[3];
 var overFileName = process.argv[4];
 try{
   var startTime = new Date().getTime();
@@ -12,7 +12,7 @@ try{
       var pathname = path.join(root, file),
         stat = fs.lstatSync(pathname);
       if (!stat.isDirectory()) {
-        if (!time || stat.mtime.getTime() / 1000 > time) {
+        if (!begin_second || stat.mtime.getTime() / 1000 > begin_second) {
           console.log(pathname + '|');
         }
       } else {

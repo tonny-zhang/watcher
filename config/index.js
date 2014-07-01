@@ -45,11 +45,10 @@ var watcher = (autoWatcher || []).concat([
 	{
 		'path': 'd:/test/html/b1/',
 		'rsync': [{
-				'address': 'sam@61.4.185.111:/zkTest/html/b1/',//同步的目标地址
-				'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
+				'address': 'root@103.224.234.180:/home/test/a/',//同步的目标地址
+				'port': 22,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
+				'param': '-r',
 				'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
-			}, {
-				'address': 'sam@61.4.185.112:/zkTest/html/b1/'
 			}
 		]
 	}
@@ -58,9 +57,9 @@ var watcher = (autoWatcher || []).concat([
 		'path': 'd:/test/html/a1/b1/1.txt',
 		'isFile': true,
 		'rsync': [{
-				'address': 'sam@61.4.185.111:/zkTest/html/b1/1/',//同步的目标地址
-				'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
-				'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
+				'address': 'root@103.224.234.180:/home/test/b/',//同步的目标地址
+				'port': 22,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
+				'logPrefix': 'rsync_2' //[可选]同步信息的日志前缀，默认为'rsync_索引'
 			}
 		]
 	}
@@ -68,9 +67,10 @@ var watcher = (autoWatcher || []).concat([
 	{
 		'path': 'd:/test/html/a1/',
 		'rsync': [{
-				'address': 'sam@61.4.185.111:/zkTest/html/b1/1/',//同步的目标地址
-				'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
-				'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
+				'address': 'root@103.224.234.180:/home/test/c/',//同步的目标地址
+				'port': 22,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
+				'param': '-r',
+				'logPrefix': 'rsync_3' //[可选]同步信息的日志前缀，默认为'rsync_索引'
 			}
 		]
 	}
@@ -78,9 +78,10 @@ var watcher = (autoWatcher || []).concat([
 	{
 		'path': 'd:/test/server/',
 		'rsync': [{
-				'address': 'sam@61.4.185.111:/zkTest/html/b1/1/',//同步的目标地址
-				'port': 2222,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
-				'logPrefix': 'rsync_1' //[可选]同步信息的日志前缀，默认为'rsync_索引'
+				'address': 'root@103.224.234.180:/home/test/d/',//同步的目标地址
+				'port': 22,	//[可选]同步的目标端口，默认设置为rsync.defaultPort
+				'param': '-r',
+				'logPrefix': 'rsync_4' //[可选]同步信息的日志前缀，默认为'rsync_索引'
 			}
 		]
 	}
@@ -103,15 +104,15 @@ var config = {
 		bin: 'node'
 	},
 	rsync: { //配置rsync
-		bin: '/usr/bin/rsync',
-		param: "-WPaz",
-		user: 'sam',
-		defaultPort: 2222
+		bin: 'scp',
+		param: "-C",
+		defaultPort: 22
 	},
 	dealLogPrefix: 'deal',//处理内存数据日志前缀
 	runLogPrefix: 'run',//run.js运行日志前缀
-	rsyncErrLogPrefix: 'rsyncErr'//同步时错误日志
+	rsyncErrLogPrefix: 'scpErr'//同步时错误日志
 	,ip: '192.168.1.120',
+	isRetainTemp: false,//当同步发生错误时是否保留错误文件
 	delay: {
 		run: 3000,		//处理程序的间隔时间
 		rsync: 1000*20,	//rsync程序执行的超时时间
@@ -119,12 +120,12 @@ var config = {
 	}
 }
 //配置删除信息文件
-config.deleteRsync = [{
-		'address': 'sam@61.4.185.111:/zkTest/serverOne/',
-	}, {
-		'address': 'sam@61.4.185.111:/zkTest/serverTwo/'
-	}
-];
+// config.deleteRsync = [{
+// 		'address': 'sam@61.4.185.111:/zkTest/serverOne/',
+// 	}, {
+// 		'address': 'sam@61.4.185.111:/zkTest/serverTwo/'
+// 	}
+// ];
 module.exports = configUtil.index(config);
 if(process.argv[1] == __filename){
 	configUtil.check(module.exports);
