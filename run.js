@@ -106,9 +106,12 @@ var _runFn = function(){
 		})();
 		function deal(callback){
 			//dealTreeMemory.getDataFromMemory保证了超时处理
-			dealTreeMemory.getDataFromMemory(function(){
-				_afterGetData(callback);
-			});
+			var fn = function(haveNextFn){
+				_afterGetData(haveNextFn?function(){
+					haveNextFn(fn);
+				}:callback);
+			};
+			dealTreeMemory.getDataFromMemory(fn);
 		}
 		function rsync(rsyncInfo,callback){
 			if(!fs.existsSync(rsyncInfo.path)){
