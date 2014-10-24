@@ -241,7 +241,7 @@ exports.extend = function(a,b,c,d){
 exports.sysError = function(logPath){
 	var errorLog = exports.prefixLogSync(logPath,'err');
 	process.on('uncaughtException',function(e){
-		errorLog('sysErr',e);
+		errorLog('sysErr',e.stack);
 	});
 }
 ;(function(){

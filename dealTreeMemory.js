@@ -4,19 +4,33 @@ var path = require('path');
 var util = require('./util');
 var fs = require('fs');
 
+var max_deal_num = config.max_deal_num || 2000;
 var copyToPath = path.normalize(config.copyToPath);
 
 var _log = util.prefixLogSync(config.logPath,config.dealLogPrefix);
 var _logError = util.errorSync(config.logPath);
-function _dealData(data,callback){
-	callback || (callback = function(){});
+var tree_queue = [];//要处理的文件都会放到队列里
+function _dealData(data,nextCallback){
 	if(data){
-		_dealTree(data.tree);
 		_dealDeleteTree(data.deleteTree);
+		_dealTree(data.tree);
 	}
-	callback();
+	deal_tree_queue(nextCallback);
 }
-
+/*处理队列*/
+function deal_tree_queue(nextCallback){
+	var total_len = tree_queue.length;
+	var deal_queue = tree_queue.splice(0,max_deal_num);
+	var queue_len = deal_queue.length;
+	if(queue_len > 0 || total_len > 0){
+		_log('queue','deal_queue len = '+queue_len+', tree_queue len = '+total_len);
+	}
+	var item;
+	while(item = deal_queue.shift()){
+		_copy.apply(null,item);
+	}
+	nextCallback && nextCallback(tree_queue.length > 0?deal_tree_queue:null);
+}
 /*复制文件，保证文件内容不为空*/
 var _copy = function(sourcePath,targetPath){
 	if(!fs.existsSync(sourcePath)){
@@ -41,10 +55,11 @@ function _dealTree(tree){
 			var fromPath = path.normalize(path.join(fromDir,i));
 			var subTreeNode = treeNode[i];
 			if(subTreeNode == 0){
-				_copy(fromPath,toPath);
+				// _copy(fromPath,toPath);
+				tree_queue.push([fromPath,toPath]);
 			}else{
-				util.mkdirSync(toPath);
-				_log('mkdir',toPath);
+				// util.mkdirSync(toPath);
+				// _log('mkdir',toPath);
 				_deal(fromPath,toPath,subTreeNode);
 			}
 		}
@@ -79,14 +94,14 @@ function _dealTree(tree){
 			if(isWatchingFile && v.isFile){
 				var filePath = v.path;
 				var newPath = path.join(toPath,path.basename(filePath));
-				_copy(filePath,newPath);
+				// _copy(filePath,newPath);
+				tree_queue.push([filePath,newPath]);
 			}else{
 				_deal(v.path,toPath,driInfo);
 			}
 			new Function('delete this'+str).call(tree);//子目录处理完后清除数据，减小父级目录的处理，达到减小IO资源浪费
 		}
 	});
-	
 }
 
 //处理要删除的信息
@@ -108,8 +123,8 @@ function _dealDeleteTree(deleteTree,base){
 /*通过http得到内存中目录结构及要删除的信息
   ！！但这个方法不能保证同步
 */
-function getDataFromMemory(callback){
-	callback || (callback = function(){});
+function getDataFromMemory(nextCallback){
+	nextCallback || (nextCallback = function(){});
 	util.curl(config.host,config.port,'/',function(err,data){
 		if(err){
 			_logError('problem with request: ' + JSON.stringify(err));
@@ -118,9 +133,9 @@ function getDataFromMemory(callback){
 				data = JSON.parse(data);
 			}catch(e){
 				_logError('error getDataFromMemory data wrong!'+JSON.stringify(err));
-				callback(e);
+				nextCallback();
 			}
-			_dealData(data,callback);
+			_dealData(data,nextCallback);
 		}
 	},config.delay.curl);//设置超时时间
 }
@@ -132,6 +147,13 @@ function getDataFromJsonFile(filePath){
 		try{
 			var tree = require(filePath);
 			_dealData(tree);
+			deal_tree_queue(function(haveNextFn){
+				if(haveNextFn){
+					haveNextFn();
+				}else{
+					_log('deal data from json file down!');
+				}
+			});
 		}catch(e){
 			_logError('getDataFromJsonFile error',JSON.stringify(err));
 		}

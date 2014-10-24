@@ -86,6 +86,7 @@ var config = {
 		rsync: 1000*20,	//rsync程序执行的超时时间
 		curl: 1000*5	//执行curl得到内存数据的超时时间
 	}
+	,max_deal_num: 2000//单次处理的最大文件数
 }
 //配置删除信息文件
 // config.deleteRsync = [{
