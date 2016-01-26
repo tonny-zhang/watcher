@@ -6,9 +6,10 @@ require('../configUtil.js');
 var config = require('../config/getConfigFromFile.js');
 
 var totalConfig = {};
-var getUsefullParam = ['--exclude'];
+var getUsefullParam = ['--exclude', '--include'];
 var userFullParamHaveValue = {
-	'--exclude': true
+	'--exclude': true,
+	'--include': true
 };
 
 var getConfig = function(content,flag){
@@ -29,7 +30,7 @@ var getConfig = function(content,flag){
 			line = line.replace(match[0],'');
 			var port = match[2];
 		}
-		
+
 		var params = line.split(/\s+/);
 		var toPath = params.pop();
 		var fromPath = params.pop();
@@ -37,15 +38,23 @@ var getConfig = function(content,flag){
 
 		var temp;
 		while((temp = params.shift())){
-			var p = getUsefullParam.indexOf(temp);
-			if(p > -1){
-				var name = getUsefullParam[p];
+			var arr_temp = temp.split('=');
+			var p_name = arr_temp[0];
 
-				var param = [name];
-				if(userFullParamHaveValue[name] && params.length > 0){
-					param.push(params.shift());
+			var p = getUsefullParam.indexOf(p_name);
+			if(p > -1){
+				var param = [];
+				if (arr_temp.length == 2) {
+					param = [temp];
+				} else {
+					param.push(temp);
+					if (!/^-/.test(params[0])) {
+						param.push(params.shift());
+					}
 				}
-				usefullParam.push(param.join(' '));
+				if (param.length > 0) {
+					usefullParam.push(param.join(' '));
+				}
 			}
 		}
 		var rsync = {
@@ -61,7 +70,7 @@ var getConfig = function(content,flag){
 		if(port){
 			rsync['port'] = port;
 		}
-		
+
 		if(/\*/.test(fromPath)){
 			errorInfo.push(line);
 		}else{
@@ -94,7 +103,7 @@ config.fromFile.forEach(function(fromFile){
 	var content = fs.readFileSync(fromFile);
 	var errorInfo = getConfig(content.toString(),path.basename(fromFile));
 	if(errorInfo.length > 0){
-		console.log(fromFile,errorInfo);
+		console.log('!!!! error !!!!!!!\n'+fromFile,errorInfo);
 		var specialFromFile = fromFile+'.1'
 		if(fs.existsSync(specialFromFile)){
 			var content = fs.readFileSync(specialFromFile);
@@ -102,4 +111,4 @@ config.fromFile.forEach(function(fromFile){
 		}
 	}
 });
-pushConfigToFile();	
+pushConfigToFile();
