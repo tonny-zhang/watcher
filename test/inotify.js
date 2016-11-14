@@ -2,6 +2,7 @@ var Inotify = (function(){
     try{
         return require('inotify').Inotify;
     }catch(e){
+        console.log('\033[0;31m还没有安装inotify模块或其不可用!\033[0m';);
         var cacheNum = 1;
         var obj = function(){}
         obj.prototype.addWatch = function(){

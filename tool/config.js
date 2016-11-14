@@ -3,7 +3,7 @@ var path = require('path');
 var config = require('../config');
 var confUtil = require('../configUtil');
 
-confUtil.check(config, function(flag) {console.log(flag);
+confUtil.check(config, function(flag) {
 	if (flag) {
 
 		var currentDir = __dirname;
@@ -36,6 +36,15 @@ confUtil.check(config, function(flag) {console.log(flag);
 			var _path = path.join(currentDir,'../shell/dealLog.sh');
 			var content = fs.readFileSync(_path);
 			content = content.toString().replace(/(?!LOG_PATH=`)node/,config.node.bin);
+			fs.writeFileSync(_path,content);
+
+			console.log('Y', 'change '+_path+' LOG_PATH');
+		})();
+
+		(function(){
+			var _path = path.join(currentDir,'../shell/rmTemp.sh');
+			var content = fs.readFileSync(_path);
+			content = content.toString().replace(/(?!TEMP_PATH=`)node/,config.node.bin);
 			fs.writeFileSync(_path,content);
 
 			console.log('Y', 'change '+_path+' LOG_PATH');

@@ -221,18 +221,20 @@ var check = (function(){
 	desc[ERROR_NO_EXECUT] = ['不可执行', true];
 	var ERROR_USER = 11;
 	desc[ERROR_USER] = ['rsync 用户'];
-
+	var ERROR_NO_INOTIFY = 12;
+	desc[ERROR_NO_INOTIFY] = ['没有inotify模块', true];
 	var sayDesc = function(){
-		console.log('\n=== (* 表示比较重要) ===');
+		console.log('\n=== (* 表示比较重要) ===\n');
 		Object.keys(desc).sort(function(a,b){
-			return a.b
+			return parseInt(a) - parseInt(b)
 		}).forEach(function(v){
 			var item = desc[v];
-			console.log(item[1]?'*':' ',v,':',item[0]);
+			console.log(item[1]?'*':' ',v,':',item[0]+'\n');
 		});
 		console.log('=======================');
 	}
 	return function _check(config, cb){
+		console.log('\n');
 		var errorInfo = [];
 		function fn (target,default_c,prefix){
 			prefix || (prefix = '');
@@ -316,6 +318,11 @@ var check = (function(){
 		if (!util_inner.isCanExec(config.rsync.bin)) {
 			errorInfo.push(ERROR_NO_EXECUT+'\t' + config.rsync.bin + ' is no excutable!');
 		}
+		try {
+			require('inotify')
+		} catch(e) {
+			errorInfo.push(ERROR_NO_INOTIFY+'\t'+'没有配置inotify模块!');
+		}
 
 		function _callback() {
 			if(!errorInfo.length){
@@ -342,7 +349,7 @@ var check = (function(){
 			util_inner.who(function(err, result) {
 				var isSameUser = !err && result == user;
 				if (!isSameUser) {
-					errorInfo.push(ERROR_USER+'\t'+' 当前用户为:'+result+', config.rsync.user = '+user);
+					errorInfo.push(ERROR_USER+'\t'+'当前用户为:'+result+', config.rsync.user = '+user);
 				}
 
 				_callback();
