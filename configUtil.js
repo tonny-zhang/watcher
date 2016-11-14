@@ -103,7 +103,7 @@ function index(config){
 	return config;
 }
 
-var util_file = (function() {
+var util_inner = (function() {
 	var is_posix = false;
 	if (process.getuid) {
 		var uid = process.uid || process.getuid();
@@ -153,6 +153,9 @@ var util_file = (function() {
 		},
 		isCanExec: function(p) {
 			return _check(p, 'EXECUT');
+		},
+		who: function(cb) {
+			util.command('whoami', cb, 1000 * 10);
 		}
 	}
 })();
@@ -216,6 +219,8 @@ var check = (function(){
 	desc[ERROR_NO_WRITE] = ['路径不可写', true];
 	var ERROR_NO_EXECUT = 10;
 	desc[ERROR_NO_EXECUT] = ['不可执行', true];
+	var ERROR_USER = 11;
+	desc[ERROR_USER] = ['rsync 用户'];
 
 	var sayDesc = function(){
 		console.log('\n=== (* 表示比较重要) ===');
@@ -292,43 +297,60 @@ var check = (function(){
 			errorInfo.push(ERROR_DEBUG+'\tisDebug is true');
 		}
 
-		if (!util_file.isCanWrite(config.copyToPath)) {
+		if (!util_inner.isCanWrite(config.copyToPath)) {
 			errorInfo.push(ERROR_NO_WRITE+'\t' + config.copyToPath + ' is no writable!');
 		}
-		if (!util_file.isCanWrite(config.logPath)) {
+		if (!util_inner.isCanWrite(config.logPath)) {
 			errorInfo.push(ERROR_NO_WRITE+'\t' + config.logPath + ' is no writable!');
 		}
 		var lockFile = path.dirname(config.flock.lockFile);
-		if (!util_file.isCanWrite(lockFile)) {
+		if (!util_inner.isCanWrite(lockFile)) {
 			errorInfo.push(ERROR_NO_WRITE+'\t' + config.flock.lockFile + ' dir is no writable!');
 		}
-		if (!util_file.isCanExec(config.flock.bin)) {
+		if (!util_inner.isCanExec(config.flock.bin)) {
 			errorInfo.push(ERROR_NO_EXECUT+'\t' + config.flock.bin + ' is no excutable!');
 		}
-		if (!util_file.isCanExec(config.node.bin)) {
+		if (!util_inner.isCanExec(config.node.bin)) {
 			errorInfo.push(ERROR_NO_EXECUT+'\t' + config.node.bin + ' is no excutable!');
 		}
-		if (!util_file.isCanExec(config.rsync.bin)) {
+		if (!util_inner.isCanExec(config.rsync.bin)) {
 			errorInfo.push(ERROR_NO_EXECUT+'\t' + config.rsync.bin + ' is no excutable!');
 		}
-		if(!errorInfo.length){
-			console.log('+++++++++++++++++');
 
-			cb && cb(true);
-		}else{
-			errorInfo.forEach(function(v){
-				var errIndex = Number(v.split('\t')[0]);
-				var isImportant = desc[errIndex] && desc[errIndex][1];
-				var msg = (isImportant?'*':' ') + v;
-				if (isImportant) {
-					msg = '\033[0;31m' + msg + '\033[0m';
-				}
-				console.log(msg);
-			});
-			sayDesc();
+		function _callback() {
+			if(!errorInfo.length){
+				console.log('+++++++++++++++++');
 
-			cb && cb(false);
+				cb && cb(true);
+			}else{
+				errorInfo.forEach(function(v){
+					var errIndex = Number(v.split('\t')[0]);
+					var isImportant = desc[errIndex] && desc[errIndex][1];
+					var msg = (isImportant?'*':' ') + v;
+					if (isImportant) {
+						msg = '\033[0;31m' + msg + '\033[0m';
+					}
+					console.log(msg);
+				});
+				sayDesc();
+
+				cb && cb(false);
+			}	
 		}
+		var user = config.rsync.user;
+		if (user) {
+			util_inner.who(function(err, result) {
+				var isSameUser = !err && result == user;
+				if (!isSameUser) {
+					errorInfo.push(ERROR_USER+'\t'+' 当前用户为:'+result+', config.rsync.user = '+user);
+				}
+
+				_callback();
+			});
+		} else {
+			_callback();
+		}
+		
 	}
 })();
 
