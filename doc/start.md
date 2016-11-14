@@ -2,7 +2,7 @@
 
 第一步：下载相关程序
 
-> `git clone git@github.com:tonny-zhang/watcher.git`
+> `git clone git@gitlab.tianqi.cn:all_developer/watcher.git`
 
 第二步：修改配置
 > 主要修改 `config/index.js`
