@@ -3,7 +3,7 @@ var path = require('path');
 var config = require('../config');
 var confUtil = require('../configUtil');
 
-confUtil.index(config, function(flag) {
+confUtil.check(config, function(flag) {console.log(flag);
 	if (flag) {
 
 		var currentDir = __dirname;
