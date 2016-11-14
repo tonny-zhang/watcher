@@ -93,4 +93,4 @@ addPathAPI.js给外部提供临时的更新文件目录的接口，用法如下�
 
 ## [快速配置工具](./doc/start.md)
 
-## [inotify相关模块下载](https://github.com/tonny-zhang/watcher/issues/23)
+## [inotify相关模块下载](./doc/inotify_download.md)
