@@ -1,7 +1,7 @@
 var fs = require('fs');
 var path = require('path');
 var config = require('../config');
-var confUtil = require('../confUtil');
+var confUtil = require('../configUtil');
 
 confUtil.index(config, function(flag) {
 	if (flag) {
