@@ -1,1 +1,0 @@
-[{"path":"/home/sam/www/htdocs/tfzt/index","isFile":true,"rsync":[{"address":"sam@61.4.185.155:/home/sam/www/typhoon/htdocs/tfzt/","logPrefix":"61.4.185.155","port":"2222"},{"address":"sam@61.4.185.155:/home/sam/www/typhoon/htdocs/tfzt/","param":"--exclude=\"/tes/ab/c\"","logPrefix":"61.4.185.155","port":"2222"}],"flag":"test.sh,test.sh"}]
